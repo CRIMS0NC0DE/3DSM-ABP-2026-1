@@ -96,7 +96,7 @@ Perfis de acesso:
 
 ## 👥 Equipe e Contatos
 
-- **Product Owner** Vinícius de Oliveira - [ViniciusLedro (https://github.com/ViniciusLedro) 
+- **Product Owner** Vinícius de Oliveira - [ViniciusLedro (https://github.com/ViniciusLedro)] 
 - **Scrum Master** Márcio Bueno - [MarcioBuenoo](https://github.com/MarcioBuenoo)
 - **Dev. Team:** Davi Snaider - [davisnaider06](https://github.com/davisnaider06)
 - **Dev. Team:** Eric França - [EricFranca96](https://github.com/EricFranca90)
