@@ -1,0 +1,25 @@
+{
+  "name": "3dsm-abp-2026-1",
+  "version": "1.0.0",
+  "description": "Repositório para desenvolvimento da ABP-2026-1 do 3DSM.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CRIMS0NC0DE/3DSM-ABP-2026-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CRIMS0NC0DE/3DSM-ABP-2026-1/issues"
+  },
+  "homepage": "https://github.com/CRIMS0NC0DE/3DSM-ABP-2026-1#readme",
+  "dependencies": {
+    "docker": "^1.0.0",
+    "docker-compose": "^1.3.2"
+  }
+}
