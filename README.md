@@ -5,6 +5,17 @@ Este sistema é um projeto acadêmico desenvolvido para o **3º semestre de DSM 
 
 O objetivo é criar uma plataforma completa para a **1000 Valle Multimarcas**, permitindo gerenciar todo o fluxo de vendas — desde a captação de leads até a análise de conversão por meio de dashboards analíticos.
 
+Para inicializar o ambiente (Banco de dados, servidor e front-end)
+```bash
+   docker compose -f docker-compose.dev.yml up --build -d
+```
+
+Para parar os containers
+
+```bash
+   docker compose -f docker-compose.dev.yml down
+```
+
 ---
 
 ## 🛠️ Tecnologias Obrigatórias (RP01)
