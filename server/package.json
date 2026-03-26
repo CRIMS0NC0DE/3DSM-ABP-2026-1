@@ -4,6 +4,8 @@
   "description": "Repositório para desenvolvimento da ABP-2026-1 do 3DSM.",
   "main": "index.js",
   "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +25,10 @@
     "docker": "^1.0.0",
     "docker-compose": "^1.3.2",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.20.0",
+    "ts-node": "^10.9.2",
+    "tsc": "^2.0.4",
+    "typescript": "^6.0.2"
   }
 }
