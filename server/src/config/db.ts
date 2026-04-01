@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 class Database {
   private static instance: PrismaClient;
@@ -7,7 +9,13 @@ class Database {
 
   public static getInstance(): PrismaClient {
     if (!Database.instance) {
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+      });
+      const adapter = new PrismaPg(pool);
+
       Database.instance = new PrismaClient({
+        adapter,
         log: ["query", "error", "warn"], // Opcional: para ver o que acontece no terminal
       });
     }
@@ -16,4 +24,6 @@ class Database {
 }
 
 // Exportamos a instância pronta para uso
-export const prisma = Database.getInstance();
+const prisma = Database.getInstance();
+
+export default prisma;

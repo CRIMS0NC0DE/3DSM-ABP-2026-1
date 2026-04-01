@@ -4,8 +4,9 @@
   "description": "Repositório para desenvolvimento da ABP-2026-1 do 3DSM.",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node src/index.ts",
+    "build": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -21,6 +22,7 @@
   },
   "homepage": "https://github.com/CRIMS0NC0DE/3DSM-ABP-2026-1#readme",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "db": "^6.0.3",
     "docker": "^1.0.0",
@@ -32,5 +34,8 @@
     "ts-node": "^10.9.2",
     "tsc": "^2.0.4",
     "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
   }
 }
