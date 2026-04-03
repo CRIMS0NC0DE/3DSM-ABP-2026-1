@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* 1. Use um modelo de caixa mais intuitivo */
 *, *::before, *::after {
   box-sizing: border-box;
