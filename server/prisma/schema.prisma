@@ -1,14 +1,98 @@
+datasource db {
+  provider = "postgresql" // ou seu banco de preferência
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
+model Usuario {
+  idUsuario    Int           @id @default(autoincrement())
+  nomeUsuario  String
+  email        String        @unique
+  senha        String
+  liderEquipe  LiderEquipe?
+  vendedor     Vendedor?
 }
 
-model User {
-  id Int @id @default(autoincrement())
-  nome String
-  email String
-  senha String
+model Equipe {
+  idEquipe     Int           @id @default(autoincrement())
+  nomeEquipe   String
+  lider        LiderEquipe?
+  vendedores   Vendedor[]
+}
+
+model LiderEquipe {
+  idLiderEquipe Int        @id @default(autoincrement())
+  idUsuario     Int        @unique
+  idEquipe      Int        @unique
+  nomeUsuario   String
+  
+  usuario       Usuario    @relation(fields: [idUsuario], references: [idUsuario])
+  equipe        Equipe     @relation(fields: [idEquipe], references: [idEquipe])
+  vendedores    Vendedor[]
+}
+
+model Vendedor {
+  idVendedor    Int          @id @default(autoincrement())
+  idUsuario     Int          @unique
+  idEquipe      Int
+  idLiderEquipe Int
+  nomeUsuario   String
+
+  usuario       Usuario      @relation(fields: [idUsuario], references: [idUsuario])
+  equipe        Equipe       @relation(fields: [idEquipe], references: [idEquipe])
+  lider         LiderEquipe  @relation(fields: [idLiderEquipe], references: [idLiderEquipe])
+  
+  leads         Lead[]
+  vendas        Venda[]
+}
+
+model OrigemLead {
+  idOrigem      Int    @id @default(autoincrement())
+  nomeOrigem    String
+  leads         Lead[]
+}
+
+model Carro {
+  idCarro       Int     @id @default(autoincrement())
+  vinChassi     String  @unique
+  placa         String  @unique
+  marca         String
+  modelo        String
+  anoFabricacao Int
+  valorEstoque  Float
+  cor           String
+  
+  leads         Lead[]
+  vendas        Venda[]
+}
+
+model Lead {
+  idLead      Int         @id @default(autoincrement())
+  idVendedor  Int
+  idOrigem    Int
+  idCarro     Int
+  statusLead  String
+  nomeLead    String
+  cliente     String
+
+  vendedor    Vendedor    @relation(fields: [idVendedor], references: [idVendedor])
+  origem      OrigemLead  @relation(fields: [idOrigem], references: [idOrigem])
+  carro       Carro       @relation(fields: [idCarro], references: [idCarro])
+  venda       Venda?
+}
+
+model Venda {
+  idVenda        Int      @id @default(autoincrement())
+  idLead         Int      @unique
+  idVendedor     Int
+  idCarro        Int
+  valorVenda     Float
+  dataVenda      DateTime @default(now())
+  formaPagamento String
+
+  lead           Lead     @relation(fields: [idLead], references: [idLead])
+  vendedor       Vendedor @relation(fields: [idVendedor], references: [idVendedor])
+  carro          Carro    @relation(fields: [idCarro], references: [idCarro])
 }
