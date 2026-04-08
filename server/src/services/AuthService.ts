@@ -1,10 +1,10 @@
-import bcrypt from "bcrypt";
-import jwt, { type SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 
 import type { User, UserRole } from "../domain/entities/User";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 import { AppError } from "../errors/AppError";
+import type { PasswordHasher } from "../security/password/PasswordHasher";
+import type { JwtPayload, TokenService } from "../security/token/TokenService";
 
 const loginSchema = z.object({
   email: z.string().email("Informe um e-mail valido."),
@@ -24,16 +24,12 @@ export interface LoginResponse {
   user: AuthenticatedUser;
 }
 
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: UserRole;
-}
-
-type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
-
 export class AuthService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly passwordHasher: PasswordHasher,
+    private readonly tokenService: TokenService,
+  ) {}
 
   async login(input: unknown): Promise<LoginResponse> {
     const { email, senha } = loginSchema.parse(input);
@@ -50,15 +46,15 @@ export class AuthService {
       throw new AppError("Credenciais invalidas.", 401);
     }
 
-    const expiresIn = this.getJwtExpiresIn();
-    const token = jwt.sign(this.buildJwtPayload(user), this.getJwtSecret(), {
-      subject: String(user.id),
-      expiresIn,
+    const generatedToken = this.tokenService.generate({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     });
 
     return {
-      token,
-      expiresIn: String(expiresIn),
+      token: generatedToken.token,
+      expiresIn: generatedToken.expiresIn,
       user: this.sanitizeUser(user),
     };
   }
@@ -84,7 +80,7 @@ export class AuthService {
   }
 
   verifyToken(token: string): JwtPayload {
-    return jwt.verify(token, this.getJwtSecret()) as JwtPayload;
+    return this.tokenService.verify(token);
   }
 
   private sanitizeUser(user: User): AuthenticatedUser {
@@ -96,40 +92,19 @@ export class AuthService {
     };
   }
 
-  private buildJwtPayload(user: User): Omit<JwtPayload, "sub"> {
-    return {
-      email: user.email,
-      role: user.role,
-    };
-  }
-
-  private getJwtSecret(): string {
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
-      throw new AppError("JWT_SECRET nao configurado no ambiente.", 500);
-    }
-
-    return secret;
-  }
-
-  private getJwtExpiresIn(): JwtExpiresIn {
-    return (process.env.JWT_EXPIRES_IN || "8h") as JwtExpiresIn;
-  }
-
   private async ensurePasswordIsValid(user: User, plainPassword: string): Promise<boolean> {
     const currentHash = user.senhaHash;
     const looksHashed = currentHash.startsWith("$2");
 
     if (looksHashed) {
-      return bcrypt.compare(plainPassword, currentHash);
+      return this.passwordHasher.compare(plainPassword, currentHash);
     }
 
     if (currentHash !== plainPassword) {
       return false;
     }
 
-    const newHash = await bcrypt.hash(plainPassword, 10);
+    const newHash = await this.passwordHasher.hash(plainPassword);
     await this.userRepository.updatePasswordHash(user.id, newHash);
 
     return true;
