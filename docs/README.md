@@ -1,3 +1,4 @@
+```mermaid
 erDiagram
     USUARIO ||--o| GERENTE_GERAL : "torna-se"
     USUARIO ||--o| LIDEREQUIPE : "torna-se"
@@ -85,3 +86,4 @@ erDiagram
         datetime dataVenda
         string formaPagamento
     }
+```
