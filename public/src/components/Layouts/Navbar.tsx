@@ -1,19 +1,49 @@
+import type { AuthUser } from "../../types/auth";
 
-export default function Navbar() {
-    return (
-        <nav className="w-full bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
-            <span className="text-xl font-bold text-blue">
-            </span>
+interface NavbarProps {
+  user: AuthUser | null;
+  onLogout: () => void;
+}
 
-            <ul className="flex gap-6 text-sm font-medium">
-                <li><a href="#" className="hover:text-blue-400">Dashboard</a></li>
-                <li><a href="#" className="hover:text-blue-400">Leads</a></li>
-                <li><a href="#" className="hover:text-blue-400">Relatórios</a></li>
+export default function Navbar({ user, onLogout }: NavbarProps) {
+  return (
+    <nav className="flex w-full items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4 text-white">
+      <div>
+        <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">1000 Valle</p>
+        <h1 className="text-lg font-semibold">Dashboard Comercial</h1>
+      </div>
 
-            </ul>
+      <ul className="hidden gap-6 text-sm font-medium text-slate-300 md:flex">
+        <li>
+          <a href="#" className="transition hover:text-cyan-300">
+            Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="#" className="transition hover:text-cyan-300">
+            Leads
+          </a>
+        </li>
+        <li>
+          <a href="#" className="transition hover:text-cyan-300">
+            Relatorios
+          </a>
+        </li>
+      </ul>
 
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className="text-sm font-medium text-white">{user?.nome || "Usuario"}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{user?.role || "sem perfil"}</p>
+        </div>
 
-            <div className="text-sm text-gray-400">Olá, Usuário!</div>
-        </nav>
-    )
+        <button
+          onClick={onLogout}
+          className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-300 hover:text-cyan-200"
+        >
+          Sair
+        </button>
+      </div>
+    </nav>
+  );
 }
