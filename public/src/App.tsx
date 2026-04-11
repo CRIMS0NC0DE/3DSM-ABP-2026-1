@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomePublic from "./pages/HomePublicPage";
 import Homepage from "./pages/HomePage";
@@ -21,11 +20,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/points" element={<PointsPage />} />
-
-          {/* 🔒 PROTEGIDO */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Homepage />} />
-          </Route>
+          <Route path="/dashboard" element={<Homepage />} />
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
