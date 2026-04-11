@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
@@ -36,44 +36,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.22),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.18),_transparent_28%)]" />
-      <div className="absolute inset-y-0 left-[-12rem] w-80 rotate-12 bg-cyan-400/10 blur-3xl" />
-      <div className="absolute inset-y-0 right-[-12rem] w-80 -rotate-12 bg-orange-400/10 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-200 text-slate-900">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.08),_transparent_25%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.06),_transparent_25%)]" />
+      <div className="absolute left-[-10rem] top-12 h-72 w-72 rounded-full bg-slate-400/20 blur-3xl" />
+      <div className="absolute right-[-10rem] bottom-24 h-72 w-72 rounded-full bg-slate-500/20 blur-3xl" />
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center p-6">
-        <section className="grid w-full overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-2xl shadow-slate-950/40 backdrop-blur md:grid-cols-[1.1fr_0.9fr]">
-          <div className="hidden flex-col justify-between border-r border-white/10 bg-slate-900/70 p-10 md:flex">
-            <div className="space-y-5">
-              <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-200">
-                CRM 1000 Valle
+        <section className="grid w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-200/40 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="hidden flex-col justify-between gap-8 border-r border-slate-200 bg-slate-950/95 p-10 text-white md:flex">
+            <div className="space-y-6">
+              <span className="inline-flex rounded-full bg-sky-500/15 px-3 py-1 text-xs uppercase tracking-[0.3em] text-sky-200">
+                1000 Valle Multimarcas
               </span>
               <h1 className="max-w-md text-4xl font-semibold leading-tight">
-                Login com JWT e controle de acesso para o painel comercial.
+                Acesse seu painel com segurança e velocidade.
               </h1>
               <p className="max-w-lg text-sm text-slate-300">
-                Entre com seu e-mail e senha para acessar o dashboard. A sessao sera mantida com token
-                JWT validado pelo backend.
+                Entre com seu e-mail e senha para acessar as ferramentas de gestão de leads e vendas.
               </p>
             </div>
 
             <div className="grid gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-200">Autenticacao com hash `bcrypt` e token `JWT`.</p>
+              <div className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-4">
+                <p className="text-sm text-slate-200">Camada extra de proteção com autenticação e sessão segura.</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-200">Protecao de rotas e renovacao visual da sessao no front.</p>
+              <div className="rounded-3xl border border-slate-700/70 bg-sky-500/10 p-4">
+                <p className="text-sm text-slate-100">Design simples, experiência fluida e cores inspiradas no painel.</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center p-6 sm:p-10">
+          <div className="flex items-center justify-center p-8 sm:p-10">
             <div className="w-full max-w-md space-y-8">
               <div className="space-y-3">
-                <span className="text-sm uppercase tracking-[0.3em] text-cyan-300">Acesso restrito</span>
+                <span className="text-sm uppercase tracking-[0.3em] text-sky-500">Acesso restrito</span>
                 <div>
-                  <h2 className="text-3xl font-semibold text-white">Entrar</h2>
-                  <p className="mt-2 text-sm text-slate-300">Use as credenciais cadastradas no PostgreSQL.</p>
+                  <h2 className="text-3xl font-semibold text-slate-900">Entrar</h2>
+                  <p className="mt-2 text-sm text-slate-600">Use suas credenciais para acessar o painel.</p>
                 </div>
               </div>
 
@@ -98,15 +97,27 @@ export default function LoginPage() {
                 />
 
                 {errorMessage ? (
-                  <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  <div className="rounded-2xl border border-[#b81414]/50 bg-[#b81414]/15 px-4 py-3 text-sm text-[#690b0b] shadow-sm shadow-[#b81414]/20">
                     {errorMessage}
                   </div>
                 ) : null}
 
-                <Button type="submit" isLoading={isSubmitting} className="w-full">
+                <Button type="submit" isLoading={isSubmitting} className="w-full bg-[#b81414] text-white hover:bg-[#9f1313]">
                   Entrar no dashboard
                 </Button>
               </form>
+
+              <div className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                <Link to="/forgot-password" className="text-sky-600 hover:text-sky-700">
+                  Esqueci minha senha
+                </Link>
+                <p>
+                  Não tem conta?{' '}
+                  <Link to="/register" className="font-semibold text-slate-900 hover:text-slate-700">
+                    Cadastre-se
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
         </section>
