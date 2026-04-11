@@ -1,9 +1,12 @@
-```mermaid
 erDiagram
+    USUARIO ||--o| GERENTE_GERAL : "torna-se"
     USUARIO ||--o| LIDEREQUIPE : "torna-se"
     USUARIO ||--o| VENDEDOR : "torna-se"
+    
+    GERENTE_GERAL ||--o{ EQUIPE : "gerencia todas"
     EQUIPE ||--o| LIDEREQUIPE : "é liderada por"
     EQUIPE ||--o{ VENDEDOR : "possui"
+    
     LIDEREQUIPE ||--o{ VENDEDOR : "supervisiona"
     VENDEDOR ||--o{ LEAD : "gerencia"
     ORIGEM_LEAD ||--o{ LEAD : "gera"
@@ -20,8 +23,15 @@ erDiagram
         string senha
     }
 
+    GERENTE_GERAL {
+        int idGerente PK
+        int idUsuario FK
+        string nivelAcesso
+    }
+
     EQUIPE {
         int idEquipe PK
+        int idGerente FK
         string nomeEquipe
     }
 
@@ -75,4 +85,3 @@ erDiagram
         datetime dataVenda
         string formaPagamento
     }
-```
