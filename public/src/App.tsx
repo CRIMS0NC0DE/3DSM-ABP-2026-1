@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import GaragePage from "./pages/GaragePage";
@@ -28,16 +27,14 @@ export default function App() {
           <Route path="/preview" element={<AuthenticatedLayout />}>
             <Route index element={<SidebarPreviewPage />} />
           </Route>
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AuthenticatedLayout />}>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/garagem" element={<GaragePage />} />
-              <Route path="/leads" element={<LeadsPage />} />
-              <Route path="/notificacoes" element={<NotificationsPage />} />
-              <Route path="/configuracoes" element={<SettingsPage />} />
-              <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
-              <Route path="/transacoes" element={<TransactionsPage />} />
-            </Route>
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/garagem" element={<GaragePage />} />
+            <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/notificacoes" element={<NotificationsPage />} />
+            <Route path="/configuracoes" element={<SettingsPage />} />
+            <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
+            <Route path="/transacoes" element={<TransactionsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -5,32 +5,27 @@ interface MetricCardProps {
     color: 'blue' | 'green' | 'yellow' | 'red';
 }
 export default function MetricCard({ title, value, icon, color }: MetricCardProps) {
-    const colorClasses = {
-        blue: 'bg-blue-100 text-blue-500',
-        green: 'bg-green-100 text-green-500',
-        yellow: 'bg-yellow-100 text-yellow-500',
-        red: 'bg-red-100 text-red-500',
-    };
-    
+    const wrapperClasses = 'rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm transition hover:shadow-md';
+
     const iconBGClasses = {
-        blue: 'bg-blue-500 text-white',
-        green: 'bg-green-500 text-white',
-        yellow: 'bg-yellow-500 text-white',
-        red: 'bg-red-500 text-white',
+        blue: 'bg-blue-100 text-blue-700',
+        green: 'bg-emerald-100 text-emerald-700',
+        yellow: 'bg-amber-100 text-amber-700',
+        red: 'bg-rose-100 text-rose-700',
     };
 
-    return(
-        <div className={`rounded-2xl border p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow ${colorClasses[color]}`}>
-            {/* Ícone com fundo colorido */}
-            <div className={`p-3 rounded-full ${iconBGClasses[color]}`}>
+    const titleClasses = 'text-sm font-semibold uppercase tracking-[0.16em] text-slate-500';
+    const valueClasses = 'mt-2 text-2xl font-semibold text-slate-900';
+
+    return (
+        <div className={`${wrapperClasses} flex items-center gap-4`}>
+            <div className={`flex h-12 w-12 items-center justify-center rounded-3xl ${iconBGClasses[color]}`}>
                 {icon}
             </div>
-            {/* Infos */}
             <div>
-                <h3 className="text-lg font-bold">{title}</h3>
-                <p className="text-2xl font-bold">{value}</p>
+                <h3 className={titleClasses}>{title}</h3>
+                <p className={valueClasses}>{value}</p>
             </div>
         </div>
-
-    )
+    );
 }
