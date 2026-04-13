@@ -31,6 +31,35 @@ function DashboardIcon() {
   );
 }
 
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M16.75 7.5a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+      <path
+        d="M6.5 19.25a6 6 0 0 1 11 0"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.25 9.25a2.75 2.75 0 1 1-5.5 0 2.75 2.75 0 0 1 5.5 0Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+      <path
+        d="M2.75 19a5 5 0 0 1 4.5-4.9"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function CarIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -219,6 +248,7 @@ export default function Sidebar() {
   const items = useMemo<SidebarItem[]>(
     () => [
       { label: "Dashboard", to: "/", icon: <DashboardIcon /> },
+      { label: "Colaboradores", to: "/colaboradores", icon: <UsersIcon /> },
       { label: "Garagem", to: "/garagem", icon: <CarIcon /> },
       { label: "Leads", to: "/leads", icon: <LeadsIcon /> },
       { label: "Notificações", to: "/notificacoes", icon: <BellIcon /> },

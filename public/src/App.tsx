@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
+import CollaboratorsPage from "./pages/CollaboratorsPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           </Route>
           <Route element={<AuthenticatedLayout />}>
             <Route path="/" element={<Homepage />} />
+          <Route path="/colaboradores" element={<CollaboratorsPage />} />
             <Route path="/garagem" element={<GaragePage />} />
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/notificacoes" element={<NotificationsPage />} />
