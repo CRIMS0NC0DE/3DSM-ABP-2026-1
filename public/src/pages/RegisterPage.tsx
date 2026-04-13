@@ -27,9 +27,9 @@ export default function RegisterPage() {
           </div>
 
           <AuthCard title="Cadastre-se">
-            <div className="space-y-6">
+            <div className="space-y-6">Cadastr
+              <Input label="Nome" type="name" placeholder="Coloque seu nome completo"/>
               <Input label="E-mail" type="email" placeholder="Digite seu e-mail" />
-              <Input label="CPF" placeholder="Digite seu CPF" />
               <Input label="Senha" type="password" placeholder="Digite sua senha" />
 
               <Button type="submit" className="w-full bg-[#b81414] text-white hover:bg-[#9f1313]">
