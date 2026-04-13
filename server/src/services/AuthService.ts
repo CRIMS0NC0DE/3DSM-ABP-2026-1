@@ -11,6 +11,12 @@ const loginSchema = z.object({
   senha: z.string().min(1, "Informe a senha."),
 });
 
+const registerSchema = z.object({
+  nome: z.string().min(1, "Informe o nome."),
+  email: z.string().email("Informe um e-mail valido."),
+  senha: z.string().min(6, "A senha deve ter no minimo 6 caracteres."),
+});
+
 export interface AuthenticatedUser {
   id: number;
   nome: string;
@@ -45,6 +51,37 @@ export class AuthService {
     if (!passwordMatches) {
       throw new AppError("Credenciais invalidas.", 401);
     }
+
+    const generatedToken = this.tokenService.generate({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return {
+      token: generatedToken.token,
+      expiresIn: generatedToken.expiresIn,
+      user: this.sanitizeUser(user),
+    };
+  }
+
+  async register(input: unknown): Promise<LoginResponse> {
+    const { nome, email, senha } = registerSchema.parse(input);
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
+    if (existingUser) {
+      throw new AppError("Esse e-mail ja esta cadastrado.", 409);
+    }
+
+    const hashedPassword = await this.passwordHasher.hash(senha);
+    
+    const user = await this.userRepository.create({
+      nome,
+      email: normalizedEmail,
+      senhaHash: hashedPassword,
+      role: "USUARIO",
+    });
 
     const generatedToken = this.tokenService.generate({
       userId: user.id,
