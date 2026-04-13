@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import GaragePage from "./pages/GaragePage";
-import Homepage from "./pages/Homepage";
+// import Homepage from "./pages/Homepage";
 import LoginPage from "./pages/LoginPage";
 import LeadsPage from "./pages/LeadsPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -15,6 +15,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
+import HomePublicPage from "./pages/HomePublicPage";
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
             <Route index element={<SidebarPreviewPage />} />
           </Route>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="/" element={<Homepage />} />
+            <Route path="/" element={<HomePublicPage />} />
           <Route path="/colaboradores" element={<CollaboratorsPage />} />
             <Route path="/garagem" element={<GaragePage />} />
             <Route path="/leads" element={<LeadsPage />} />
