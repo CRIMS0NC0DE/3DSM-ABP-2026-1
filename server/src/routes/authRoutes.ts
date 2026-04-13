@@ -11,6 +11,7 @@ export function createAuthRoutes(authService: AuthService) {
   const controller = new AuthController(authService);
 
   router.post("/login", asyncHandler(controller.login));
+  router.post("/register", asyncHandler(controller.register));
   router.get("/me", asyncHandler(authenticate(authService)), asyncHandler(controller.me));
   router.get(
     "/management",

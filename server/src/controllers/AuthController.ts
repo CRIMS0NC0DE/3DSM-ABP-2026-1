@@ -10,6 +10,11 @@ export class AuthController {
     response.status(200).json(result);
   };
 
+  register = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.authService.register(request.body);
+    response.status(201).json(result);
+  };
+
   me = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({
       user: request.authUser,

@@ -64,4 +64,20 @@ export class PrismaUserRepository implements UserRepository {
       data: { senha: passwordHash },
     });
   }
+
+  async create(user: Omit<User, "id">): Promise<User> {
+    const createdUser = await prisma.usuario.create({
+      data: {
+        nomeUsuario: user.nome,
+        email: user.email,
+        senha: user.senhaHash,
+      },
+      include: {
+        liderEquipe: true,
+        vendedor: true,
+      },
+    });
+
+    return toDomain(createdUser);
+  }
 }
