@@ -15,6 +15,20 @@ const generateCars = (): Car[] => {
   const brands = ["Honda", "Toyota", "BMW", "Audi", "Ford", "Chevrolet"];
   const fuels = ["Flex", "Gasolina", "Diesel"];
   const cars: Car[] = [];
+  const carImages = [
+    "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1469285994282-454cbe0dae8b?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1580274455191-1c62238fa333?w=640&h=420&fit=crop",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=640&h=420&fit=crop",
+  ];
 
   for (let i = 1; i <= 30; i++) {
     const brand = brands[i % brands.length];
@@ -24,7 +38,7 @@ const generateCars = (): Car[] => {
       price: `R$ ${(50000 + i * 3000).toLocaleString()}`,
       km: `${(10000 + i * 2000).toLocaleString()} km`,
       fuel: fuels[i % fuels.length],
-      image: `https://picsum.photos/seed/car-${i}/640/420`,
+      image: carImages[i % carImages.length],
       year: 2015 + (i % 10),
     });
   }
@@ -105,33 +119,30 @@ export default function GaragePage() {
                 <button
                   type="button"
                   onClick={() => setGridCols(1)}
-                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
-                    gridCols === 1
+                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${gridCols === 1
                       ? "border-blue-500 bg-blue-500 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   1 coluna
                 </button>
                 <button
                   type="button"
                   onClick={() => setGridCols(2)}
-                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
-                    gridCols === 2
+                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${gridCols === 2
                       ? "border-blue-500 bg-blue-500 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   2 colunas
                 </button>
                 <button
                   type="button"
                   onClick={() => setGridCols(3)}
-                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
-                    gridCols === 3
+                  className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${gridCols === 3
                       ? "border-blue-500 bg-blue-500 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   3 colunas
                 </button>
@@ -142,13 +153,12 @@ export default function GaragePage() {
 
         <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-sm backdrop-blur">
           <div
-            className={`grid gap-6 ${
-              gridCols === 1
+            className={`grid gap-6 ${gridCols === 1
                 ? "grid-cols-1"
                 : gridCols === 2
-                ? "grid-cols-2"
-                : "grid-cols-3"
-            }`}
+                  ? "grid-cols-2"
+                  : "grid-cols-3"
+              }`}
           >
             {filteredCars.length > 0 ? (
               filteredCars.map((car) => (

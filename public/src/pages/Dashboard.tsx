@@ -71,8 +71,7 @@ export default function Homepage() {
         <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Dashboard</p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Bem-vindo, {user?.nome || "usuário"}</h1>
+              <p className="font-mono text-sm uppercase tracking-[0.22em] text-slate-400">Dashboard</p>              <h1 className="mt-2 text-3xl font-bold text-slate-900">Bem-vindo, {user?.nome || "usuário"}</h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-500">
                 Visão geral rápida do seu desempenho comercial. Use a sidebar para navegar entre as áreas do sistema.
               </p>
