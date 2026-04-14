@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql" // ou seu banco de preferência
+  provider = "postgresql"
 }
 
 generator client {
@@ -11,14 +11,29 @@ model Usuario {
   nomeUsuario  String
   email        String        @unique
   senha        String
+  
+  // Relações 1:1 opcionais (torna-se)
+  gerenteGeral GerenteGeral?
   liderEquipe  LiderEquipe?
   vendedor     Vendedor?
 }
 
+model GerenteGeral {
+  idGerente   Int      @id @default(autoincrement())
+  idUsuario   Int      @unique
+  nivelAcesso String
+  
+  usuario     Usuario  @relation(fields: [idUsuario], references: [idUsuario])
+  equipes     Equipe[] // Gerencia várias equipes
+}
+
 model Equipe {
   idEquipe     Int           @id @default(autoincrement())
+  idGerente    Int
   nomeEquipe   String
-  lider        LiderEquipe?
+  
+  gerente      GerenteGeral  @relation(fields: [idGerente], references: [idGerente])
+  lider        LiderEquipe?  // 1:1 com Equipe
   vendedores   Vendedor[]
 }
 
@@ -26,11 +41,10 @@ model LiderEquipe {
   idLiderEquipe Int        @id @default(autoincrement())
   idUsuario     Int        @unique
   idEquipe      Int        @unique
-  nomeUsuario   String
   
   usuario       Usuario    @relation(fields: [idUsuario], references: [idUsuario])
   equipe        Equipe     @relation(fields: [idEquipe], references: [idEquipe])
-  vendedores    Vendedor[]
+  vendedores    Vendedor[] // Supervisão direta dos vendedores
 }
 
 model Vendedor {
@@ -38,14 +52,24 @@ model Vendedor {
   idUsuario     Int          @unique
   idEquipe      Int
   idLiderEquipe Int
-  nomeUsuario   String
-
+  
   usuario       Usuario      @relation(fields: [idUsuario], references: [idUsuario])
   equipe        Equipe       @relation(fields: [idEquipe], references: [idEquipe])
   lider         LiderEquipe  @relation(fields: [idLiderEquipe], references: [idLiderEquipe])
   
   leads         Lead[]
   vendas        Venda[]
+}
+
+model Cliente {
+  idCliente       Int      @id @default(autoincrement())
+  nomeCliente     String
+  emailCliente    String   @unique
+  cpfCliente      String   @unique
+  telefoneCelular String
+  descricao       String?
+  
+  leads           Lead[]
 }
 
 model OrigemLead {
@@ -56,7 +80,7 @@ model OrigemLead {
 
 model Carro {
   idCarro       Int     @id @default(autoincrement())
-  vinChassi     String  @unique
+  vinChassi     String  @unique @map("vin_chassi")
   placa         String  @unique
   marca         String
   modelo        String
@@ -70,13 +94,14 @@ model Carro {
 
 model Lead {
   idLead      Int         @id @default(autoincrement())
+  idCliente   Int
   idVendedor  Int
   idOrigem    Int
   idCarro     Int
   statusLead  String
   nomeLead    String
-  cliente     String
 
+  cliente     Cliente     @relation(fields: [idCliente], references: [idCliente])
   vendedor    Vendedor    @relation(fields: [idVendedor], references: [idVendedor])
   origem      OrigemLead  @relation(fields: [idOrigem], references: [idOrigem])
   carro       Carro       @relation(fields: [idCarro], references: [idCarro])
