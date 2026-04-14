@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import GaragePage from "./pages/GaragePage";
-// import Homepage from "./pages/Homepage";
+import Dashboard from "./pages/Dashboard";
 import LoginPage from "./pages/LoginPage";
 import LeadsPage from "./pages/LeadsPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -15,7 +15,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
-import HomePublicPage from "./pages/HomePublicPage";
+import HomePage from "./pages/HomePage";
 
 export default function App() {
   return (
@@ -29,9 +29,10 @@ export default function App() {
           <Route path="/preview" element={<AuthenticatedLayout />}>
             <Route index element={<SidebarPreviewPage />} />
           </Route>
+          <Route path="/" element={<HomePage />} />
           <Route element={<AuthenticatedLayout />}>
-            <Route path="/" element={<HomePublicPage />} />
-          <Route path="/colaboradores" element={<CollaboratorsPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/colaboradores" element={<CollaboratorsPage />} />
             <Route path="/garagem" element={<GaragePage />} />
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/notificacoes" element={<NotificationsPage />} />
@@ -45,4 +46,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-

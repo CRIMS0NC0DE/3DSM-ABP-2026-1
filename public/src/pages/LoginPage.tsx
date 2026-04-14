@@ -13,7 +13,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/";
+  const redirectTo =
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/dashboard";
 
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
@@ -124,4 +125,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
