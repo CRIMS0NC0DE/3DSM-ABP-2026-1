@@ -34,7 +34,7 @@ services:
     volumes:
       - ./server:/usr/src/abp
       - ./logs:/usr/src/app/logs
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
     ports:
       - "3001:3000"
 
