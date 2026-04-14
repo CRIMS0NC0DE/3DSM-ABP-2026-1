@@ -135,13 +135,49 @@ Perfis de acesso:
 
 ---
 
+## SPRINT 1 🔁
+
+<h3>SPRINT BACKLOG 📜</h3>
+
+<p>Para o primeiro ciclo de desenvolvimento, definimos que seriam entregues as seguintes USs:</p>
+
+<ul>
+ <li>
+   Definição da estrutura de Páginas ✅;
+ </li>
+  <li>
+   Criação de Protótipo no FIGMA para Desenvolvimento ✅;
+ </li>
+  <li>
+   Consolidação de Artefatos UML e Documentação Arquitetural ✅;
+ </li>
+  <li>
+   Configuração do Ambiente Docker e Estrutura de Dados ✅;
+ </li>
+  <li>
+   Implementação de Login e Controle de Acesso JWT ✅;
+ </li>
+  <li>
+   Interface de Login e Proteção de Rotas ✅;
+ </li>
+  <li>
+   Aplicação de Padrões de Projeto e Documentação ✅;
+ </li>
+</ul>
+
+<h3>BURNDOWN 🔥</h3>
+
+<div>
+ <img src=docs/BurndownSP1.png > 
+</div>
+
+
 ## 👥 Equipe e Contatos
 
 - **Product Owner:** Vinícius de Oliveira - [ViniciusLedro](https://github.com/ViniciusLedro)
 - **Scrum Master:** Márcio Bueno - [MarcioBuenoo](https://github.com/MarcioBuenoo)
 - **Dev. Team:** Davi Snaider - [davisnaider06](https://github.com/davisnaider06)
 - **Dev. Team:** Eric França - [EricFranca96](https://github.com/EricFranca90)
-- **Dev. Team:** Henrique Pinho - [rickshf](https://github.com/rickshf)
-- **Dev. Team:** Pedro Rosa -   
+- **Dev. Team:** Pedro Rosa -  [PedHr](https://github.com/PedHr)
 - **Focal Point:** Prof. Arley Ferreira de Souza - [arleysouza](https://github.com/arleysouza) 
 - **Parceiro:** 1000 Valle Multimarcas  
