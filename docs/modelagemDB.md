@@ -1,14 +1,17 @@
 ```mermaid
+
 erDiagram
     USUARIO ||--o| GERENTE_GERAL : "torna-se"
     USUARIO ||--o| LIDEREQUIPE : "torna-se"
     USUARIO ||--o| VENDEDOR : "torna-se"
     
-    GERENTE_GERAL ||--o{ EQUIPE : "gerencia todas"
+    GERENTE_GERAL ||--o{ EQUIPE : "gerencia"
     EQUIPE ||--o| LIDEREQUIPE : "é liderada por"
     EQUIPE ||--o{ VENDEDOR : "possui"
     
     LIDEREQUIPE ||--o{ VENDEDOR : "supervisiona"
+    
+    CLIENTE ||--o{ LEAD : "origina"
     VENDEDOR ||--o{ LEAD : "gerencia"
     ORIGEM_LEAD ||--o{ LEAD : "gera"
     CARRO ||--o{ LEAD : "é do interesse de"
@@ -16,6 +19,25 @@ erDiagram
     LEAD ||--o| VENDA : "converte em"
     VENDEDOR ||--o{ VENDA : "realiza"
     CARRO ||--o| VENDA : "é vendido em"
+
+    CLIENTE {
+        int idCliente PK
+        string nomeCliente
+        string emailCliente
+        string cpfCliente
+        string telefoneCelular
+        string descricao
+    }
+
+    LEAD {
+        int idLead PK
+        int idCliente FK
+        int idVendedor FK
+        int idOrigem FK
+        int idCarro FK
+        string statusLead
+        string nomeLead
+    }
 
     USUARIO {
         int idUsuario PK
@@ -40,7 +62,6 @@ erDiagram
         int idLiderEquipe PK
         int idUsuario FK
         int idEquipe FK
-        string nomeUsuario
     }
 
     VENDEDOR {
@@ -48,7 +69,6 @@ erDiagram
         int idUsuario FK
         int idEquipe FK
         int idLiderEquipe FK
-        string nomeUsuario
     }
 
     ORIGEM_LEAD {
@@ -65,16 +85,6 @@ erDiagram
         int anoFabricacao
         float valorEstoque
         string cor
-    }
-
-    LEAD {
-        int idLead PK
-        int idVendedor FK
-        int idOrigem FK
-        int idCarro FK
-        string statusLead
-        string nomeLead
-        string cliente
     }
 
     VENDA {
