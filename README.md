@@ -88,6 +88,10 @@ O sistema segue uma arquitetura em camadas, garantindo **baixo acoplamento** e *
 - **Factory Method**
   - Utilizado para criação e diferenciação dos perfis de usuários (RBAC)
 
+- **Decorator**
+   - Utilizado para adicionar auditoria e logs sem alterar as implementações principais.
+   - Aplicado nas abstrações de senha e token.
+
 ---
 
 ## 🔐 Segurança e Regras de Negócio (RNF02)
