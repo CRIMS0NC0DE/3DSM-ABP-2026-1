@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
 
 import prisma from "../config/db";
-import type { User, UserRole } from "../domain/entities/User";
+import type { User } from "../domain/entities/User";
+import { RoleBasedUserFactory } from "../domain/factories/RoleBasedUserFactory";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 
 type PrismaUserWithRelations = Prisma.UsuarioGetPayload<{
@@ -11,26 +12,17 @@ type PrismaUserWithRelations = Prisma.UsuarioGetPayload<{
   };
 }>;
 
-function mapRole(user: NonNullable<PrismaUserWithRelations>): UserRole {
-  if (user.liderEquipe) {
-    return "GERENTE";
-  }
-
-  if (user.vendedor) {
-    return "ATENDENTE";
-  }
-
-  return "USUARIO";
-}
+const userFactory = new RoleBasedUserFactory();
 
 function toDomain(user: NonNullable<PrismaUserWithRelations>): User {
-  return {
+  return userFactory.create({
     id: user.idUsuario,
     nome: user.nomeUsuario,
     email: user.email,
     senhaHash: user.senha,
-    role: mapRole(user),
-  };
+    hasLeaderProfile: Boolean(user.liderEquipe),
+    hasSellerProfile: Boolean(user.vendedor),
+  });
 }
 
 export class PrismaUserRepository implements UserRepository {
