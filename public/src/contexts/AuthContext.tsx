@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { ApiError, getCurrentUser, login as loginRequest } from "../services/api";
+import { ApiError, getCurrentUser, login as loginRequest, register as registerRequest } from "../services/api";
 import type { AuthUser } from "../types/auth";
 
 interface AuthContextValue {
@@ -16,6 +16,7 @@ interface AuthContextValue {
   token: string | null;
   user: AuthUser | null;
   login: (email: string, senha: string) => Promise<void>;
+  register: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -93,6 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     async login(email: string, senha: string) {
       const response = await loginRequest(email, senha);
+
+      startTransition(() => {
+        setToken(response.token);
+        setUser(response.user);
+      });
+
+      localStorage.setItem(
+        AUTH_STORAGE_KEY,
+        JSON.stringify({
+          token: response.token,
+          user: response.user,
+        }),
+      );
+    },
+    async register(nome: string, email: string, senha: string) {
+      const response = await registerRequest(nome, email, senha);
 
       startTransition(() => {
         setToken(response.token);

@@ -50,6 +50,13 @@ export function login(email: string, senha: string) {
   });
 }
 
+export function register(nome: string, email: string, senha: string) {
+  return request<LoginResponse>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ nome, email, senha }),
+  });
+}
+
 export function getCurrentUser(token: string) {
   return request<{ user: LoginResponse["user"] }>("/auth/me", {
     method: "GET",
@@ -58,4 +65,3 @@ export function getCurrentUser(token: string) {
     },
   });
 }
-
