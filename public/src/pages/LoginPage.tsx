@@ -39,29 +39,30 @@ export default function LoginPage() {
     <div className="relative min-h-screen overflow-hidden bg-slate-200 text-slate-900">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.08),_transparent_25%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.06),_transparent_25%)]" />
       <div className="absolute left-[-10rem] top-12 h-72 w-72 rounded-full bg-slate-400/20 blur-3xl" />
-      <div className="absolute right-[-10rem] bottom-24 h-72 w-72 rounded-full bg-slate-500/20 blur-3xl" />
+      <div className="absolute right-[-10rem] bottom-12 h-72 w-72 rounded-full bg-slate-500/20 blur-3xl" />
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center p-6">
         <section className="grid w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-200/40 md:grid-cols-[1.15fr_0.85fr]">
-          <div className="hidden flex-col justify-between gap-8 border-r border-slate-200 bg-slate-950/95 p-10 text-white md:flex">
-            <div className="space-y-6">
-              <span className="inline-flex rounded-full bg-sky-500/15 px-3 py-1 text-xs uppercase tracking-[0.3em] text-sky-200">
-                1000 Valle Multimarcas
-              </span>
-              <h1 className="max-w-md text-4xl font-semibold leading-tight">
-                Acesse seu painel com segurança e velocidade.
-              </h1>
-              <p className="max-w-lg text-sm text-slate-300">
-                Entre com seu e-mail e senha para acessar as ferramentas de gestão de leads e vendas.
-              </p>
-            </div>
 
-            <div className="grid gap-4">
-              <div className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-4">
-                <p className="text-sm text-slate-200">Camada extra de proteção com autenticação e sessão segura.</p>
-              </div>
-              <div className="rounded-3xl border border-slate-700/70 bg-sky-500/10 p-4">
-                <p className="text-sm text-slate-100">Design simples, experiência fluida e cores inspiradas no painel.</p>
+          <div className="relative hidden min-h-[500px] flex-col bg-slate-950 text-white md:flex">
+            <img
+              src="/login-foto.png"
+              alt=""
+              className="absolute inset-x-0 bottom-0 mx-auto w-10/4 object-contain"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
+
+            <div className="relative z-10 flex flex-col justify-between gap-8 p-10 h-full">
+              <div className="space-y-6">
+                <span className="inline-flex rounded-full bg-sky-500/15 px-3 py-1 text-xs uppercase tracking-[0.3em] text-sky-200">
+                  1000 Valle Multimarcas
+                </span>
+                <h1 className="max-w-md text-4xl font-semibold leading-tight">
+                  Acesse seu painel com segurança e velocidade.
+                </h1>
+                <p className="max-w-lg text-sm text-slate-300">
+                  Entre com seu e-mail e senha para acessar as ferramentas de gestão de leads e vendas.
+                </p>
               </div>
             </div>
           </div>
@@ -112,7 +113,7 @@ export default function LoginPage() {
                   Esqueci minha senha
                 </Link>
                 <p>
-                  Não tem conta?{' '}
+                  Não tem conta?{" "}
                   <Link to="/register" className="font-semibold text-slate-900 hover:text-slate-700">
                     Cadastre-se
                   </Link>
@@ -120,6 +121,7 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+
         </section>
       </main>
     </div>
