@@ -14,7 +14,7 @@ Clone o Repositório:
 
 Dentro da pasta do projeto instale as dependências:
 ```bash
-   cd front
+   cd public
    npm i
    cd ..
    cd server
