@@ -1,0 +1,14 @@
+PONTOS NECESSÁRIOS PARA SPRINT 2
+
+- Remover opção de cadastro da Homepage. Cadastros passarão a ser feitos pelo Gerente onde ele irá definir o role/papel no momento do cadastro.
+- Criar os acessos de acordo com o role/cargo
+- Refinamento do Front-End
+- Perfil de Gerente Geral recebe os leads e direciona para os vendedores ( fluxo de lead de tráfego orgânico )
+- Quando o vendedor acessar a plataforma a primeira página que ele deve ver é uma dashboard, onde ele poderá ver as
+  atividades do dia, agenda com pins personalizados, vendas realizadas, leads em aberto e métricas dos dias anteriores.
+  relatórios semanais e diários para verificar a performance.
+- Módulo de relatórios para o Gerente onde ele pode ver todos os vendedores e equipes, e para o Lider equipe ele pode ver
+  apenas os relatórios referentes a sua equipe e o vendedor só pode ver as suas próprias métricas.
+- A aba de notificações deve atuar com uma agenda que dispara alarmes e avisos.
+- Dentro do lead ele pode adicionar notas relacionadas aquele lead ( Ex: reuniões feitas, orçamentos e etc. )
+- Ao clicar em sair o usuário deve ser desconectado, sendo necessário realizar login.
