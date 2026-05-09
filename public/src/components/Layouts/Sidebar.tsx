@@ -260,7 +260,7 @@ export default function Sidebar() {
   const reportItems = useMemo<SidebarItem[]>(
     () => [
       { label: "Detalhes pagamento", to: "/detalhes-pagamento", icon: <PaymentDetailsIcon /> },
-      { label: "Transações", to: "/transacoes", icon: <TransactionsIcon /> },
+      { label: "Relatório de transações", to: "/relatorio-transacoes", icon: <TransactionsIcon /> },
     ],
     [],
   );

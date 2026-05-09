@@ -11,7 +11,7 @@ import PaymentDetailsPage from "./pages/PaymentDetailsPage";
 import PointsPage from "./pages/PointsPage";
 import RegisterPage from "./pages/RegisterPage";
 import SettingsPage from "./pages/SettingsPage";
-import TransactionsPage from "./pages/TransactionsPage";
+import RelatoryPage from "./pages/RelatoryPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
@@ -38,7 +38,7 @@ export default function App() {
             <Route path="/notificacoes" element={<NotificationsPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
-            <Route path="/transacoes" element={<TransactionsPage />} />
+            <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

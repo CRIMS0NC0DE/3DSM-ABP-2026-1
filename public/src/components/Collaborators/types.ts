@@ -8,6 +8,7 @@ export type PermissionKey =
   | "notificacoes"
   | "configuracoes"
   | "detalhes_pagamento"
+  | "relatorio"
   | "transacoes"
   | "pontos";
 
@@ -30,6 +31,7 @@ export const MODULES: Array<{ key: PermissionKey; label: string }> = [
   { key: "leads", label: "Leads" },
   { key: "garagem", label: "Garagem" },
   { key: "notificacoes", label: "Notificações" },
+  { key: "relatorio", label: "Relatório de vendas" },
   { key: "transacoes", label: "Transações" },
   { key: "detalhes_pagamento", label: "Detalhes pagamento" },
   { key: "pontos", label: "Pontos" },
