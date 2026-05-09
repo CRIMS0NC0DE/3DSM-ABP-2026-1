@@ -104,6 +104,14 @@ function LeadsIcon() {
   );
 }
 
+function ChatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.3c.95 0 1.8.18 2.6.5l4.9-1.5-1.5 4.9Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -251,6 +259,7 @@ export default function Sidebar() {
       { label: "Colaboradores", to: "/colaboradores", icon: <UsersIcon /> },
       { label: "Garagem", to: "/garagem", icon: <CarIcon /> },
       { label: "Leads", to: "/leads", icon: <LeadsIcon /> },
+      { label: "Chat", to: "/chat", icon: <ChatIcon /> },
       { label: "Notificações", to: "/notificacoes", icon: <BellIcon /> },
       { label: "Configurações", to: "/configuracoes", icon: <SettingsIcon /> },
     ],

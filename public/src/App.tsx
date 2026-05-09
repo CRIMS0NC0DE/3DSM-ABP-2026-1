@@ -16,6 +16,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
+import ChatPage from "./pages/page";
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
             <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
+            <Route path="/chat" element={<ChatPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,63 +1,40 @@
-import { useMetrics } from "./useMetrics";
-import DashboardHeader from "./DashboardHeader";
-import MetricsCards from "./MetricsCards";
-import RevenueChart from "./RevenueChart";
-import MetricsTable from "./MetricsTable";
-import LeadDistributionPie from "./LeadDistributionPie";
-import CategoryBarChart from "./CategoryBarChart";
-import AttendantPerformance from "./AttendantPerformance";
+import { ChatProvider, useChat } from "./ChatContext";
+import ChatSidebar from "./ChatSidebar";
+import ChatHeader from "./ChatHeader";
+import ChatMessages from "./ChatMessages";
+import ChatInput from "./ChatInput";
 
-export default function MetricsPage() {
-  const { 
-    summary, 
-    revenueData, 
-    transactions, 
-    leadSources, 
-    categoryPerformance, 
-    attendantPerformance, 
-    filter, 
-    setFilter,
-    startDate,
-    setStartDate,
-    endDate,
-    setEndDate 
-  } = useMetrics();
+function ChatContent() {
+  const { activeConversation } = useChat();
 
   return (
-    <div className="min-h-full bg-slate-950 p-4 text-slate-100 sm:p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header com Filtros */}
-        <DashboardHeader 
-          statusFilter={filter}
-          onStatusChange={setFilter}
-          startDate={startDate}
-          onStartDateChange={setStartDate}
-          endDate={endDate}
-          onEndDateChange={setEndDate}
-        />
-
-        {/* Sumário em Cards */}
-        <MetricsCards data={summary} />
-
-        {/* Linha 2: Gráfico de Receita e Distribuição */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-          <RevenueChart data={revenueData} />
+    <div className="flex h-[calc(100vh-2rem)] overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950/50 shadow-2xl">
+      <ChatSidebar />
+      <div className="flex flex-1 flex-col bg-gradient-to-b from-slate-900/50 to-slate-950">
+        {activeConversation ? (
+          <>
+            <ChatHeader />
+            <ChatMessages />
+            <ChatInput />
+          </>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+            <div className="mb-4 text-6xl opacity-20">💬</div>
+            <h3 className="text-xl font-bold text-slate-100">Selecione uma conversa</h3>
+            <p className="mt-2 text-sm text-slate-500">Inicie um bate-papo com sua equipe ou clientes.</p>
           </div>
-          <LeadDistributionPie data={leadSources} />
-        </div>
-          
-        {/* Linha 3: Tabela e Performance */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-          <MetricsTable transactions={transactions} />
-          </div>
-          <div className="flex flex-col gap-6">
-            <AttendantPerformance data={attendantPerformance} />
-            <CategoryBarChart data={categoryPerformance} />
-          </div>
-        </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <ChatProvider>
+      <main className="p-4 lg:p-8">
+        <ChatContent />
+      </main>
+    </ChatProvider>
   );
 }

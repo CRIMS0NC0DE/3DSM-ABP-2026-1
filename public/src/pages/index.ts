@@ -1,23 +1,13 @@
-export type MetricTrend = "up" | "down" | "stable";
-
-export interface MetricSummary {
-  id: string;
+// Tipos do Dashboard
+export interface PieDataPoint {
   label: string;
-  value: string | number;
-  trendValue: string;
-  trend: MetricTrend;
-  icon: string;
+  value: number;
+  color: string;
 }
 
 export interface ChartDataPoint {
   label: string;
   value: number;
-}
-
-export interface PieDataPoint {
-  label: string;
-  value: number;
-  color: string;
 }
 
 export interface AttendantDataPoint {
@@ -28,11 +18,46 @@ export interface AttendantDataPoint {
   avatarColor?: string;
 }
 
-export interface TransactionData {
+export interface MetricSummary {
   id: string;
+  label: string;
+  value: string;
+  trend: 'up' | 'down' | 'neutral';
+  trendValue: string;
+  icon: string;
+}
+
+export interface TransactionData {
+  id: number;
   customer: string;
-  status: "Completed" | "Pending" | "Canceled";
+  status: 'Completed' | 'Pending' | 'Canceled';
   date: string;
   amount: string;
-  paymentMethod: string;
+}
+
+// Tipos do Chat
+export type MessageStatus = 'sent' | 'delivered' | 'read';
+
+export interface ChatUser {
+  id: string;
+  nome: string;
+  avatar?: string;
+  online: boolean;
+  ultimoAcesso?: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  timestamp: string;
+  status: MessageStatus;
+}
+
+export interface Conversation {
+  id: string;
+  participants: ChatUser[];
+  lastMessage?: Message;
+  updatedAt: string;
 }
