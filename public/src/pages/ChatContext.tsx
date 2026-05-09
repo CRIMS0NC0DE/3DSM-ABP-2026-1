@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Conversation, Message, ChatUser } from './index';
-import { mockConversations, mockMessages, mockUsers } from './data';
+import { mockConversations, mockMessages } from './data';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ChatContextType {
@@ -26,7 +26,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [allMessages, setAllMessages] = useState<Record<string, Message[]>>(mockMessages);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'online'>('all');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const messages = activeConversation ? (allMessages[activeConversation.id] || []) : [];
 

@@ -22,17 +22,18 @@ export interface MetricSummary {
   id: string;
   label: string;
   value: string;
-  trend: 'up' | 'down' | 'neutral';
+  trend: 'up' | 'down' | 'neutral' | 'stable';
   trendValue: string;
   icon: string;
 }
 
 export interface TransactionData {
-  id: number;
+  id: number | string;
   customer: string;
   status: 'Completed' | 'Pending' | 'Canceled';
   date: string;
   amount: string;
+  paymentMethod?: string;
 }
 
 // Tipos do Chat

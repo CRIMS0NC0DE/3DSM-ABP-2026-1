@@ -16,7 +16,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
-import ChatPage from "./pages/page";
+import ChatPage from "./pages/ChatPage";
 
 export default function App() {
   return (
