@@ -1,11 +1,18 @@
-import { useState, type FormEvent } from "react";
+import React, { useState } from "react";
+
+type LeadStatus =
+  | "Não atendido"
+  | "Em negociação"
+  | "Não lido"
+  | "Agendado"
+  | "Finalizado - vendido";
 
 interface Lead {
   name: string;
   phone: string;
   email: string;
   interest: string;
-  status: "Novo" | "Em andamento" | "Fechado";
+  status: LeadStatus;
 }
 
 interface LeadFormProps {
@@ -13,14 +20,22 @@ interface LeadFormProps {
   onSave: (lead: Lead) => void;
 }
 
+const STAGES: LeadStatus[] = [
+  "Não atendido",
+  "Em negociação",
+  "Não lido",
+  "Agendado",
+  "Finalizado - vendido",
+];
+
 export default function LeadForm({ onclose, onSave }: LeadFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [interest, setInterest] = useState("");
-  const [status, setStatus] = useState<Lead["status"]>("Novo");
+  const [status, setStatus] = useState<LeadStatus>("Não atendido");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     onSave({ name, phone, email, interest, status });
     onclose();
@@ -109,9 +124,9 @@ export default function LeadForm({ onclose, onSave }: LeadFormProps) {
               onChange={(event) => setStatus(event.target.value as Lead["status"])}
               className="mt-1 block w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             >
-              <option value="Novo">Novo</option>
-              <option value="Em andamento">Em andamento</option>
-              <option value="Fechado">Fechado</option>
+              {STAGES.map((stage) => (
+                <option key={stage} value={stage}>{stage}</option>
+              ))}
             </select>
           </div>
 

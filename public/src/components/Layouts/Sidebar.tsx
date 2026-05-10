@@ -144,22 +144,12 @@ function SettingsIcon() {
     </svg>
   );
 }
-
 function PaymentDetailsIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 8h8M8 12h8M8 16h5"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M6 15h4M16 15h2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>
   );
 }
@@ -167,32 +157,10 @@ function PaymentDetailsIcon() {
 function TransactionsIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M7 7h10a3 3 0 0 1 3 3v1"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-      <path
-        d="M17 17H7a3 3 0 0 1-3-3v-1"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-      <path
-        d="M18 9l2 2-2 2"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6 15l-2-2 2-2"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M7 7h10a3 3 0 0 1 3 3v1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M17 17H7a3 3 0 0 1-3-3v-1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M18 9l2 2-2 2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 15l-2-2 2-2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -255,21 +223,21 @@ export default function Sidebar() {
 
   const items = useMemo<SidebarItem[]>(
     () => [
-      { label: "Dashboard", to: "/", icon: <DashboardIcon /> },
-      { label: "Colaboradores", to: "/colaboradores", icon: <UsersIcon /> },
-      { label: "Garagem", to: "/garagem", icon: <CarIcon /> },
-      { label: "Leads", to: "/leads", icon: <LeadsIcon /> },
-      { label: "Chat", to: "/chat", icon: <ChatIcon /> },
+      { label: "Dashboard",    to: "/dashboard",    icon: <DashboardIcon /> },
+      { label: "Garagem",      to: "/garagem",      icon: <CarIcon /> },
+      { label: "Leads",        to: "/leads",        icon: <LeadsIcon /> },
+      { label: "Chat",         to: "/chat",         icon: <ChatIcon /> },
       { label: "Notificações", to: "/notificacoes", icon: <BellIcon /> },
-      { label: "Configurações", to: "/configuracoes", icon: <SettingsIcon /> },
+      { label: "Colaboradores",to: "/colaboradores",icon: <UsersIcon /> },
+      { label: "Configurações",to: "/configuracoes",icon: <SettingsIcon /> },
     ],
     [],
   );
 
   const reportItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Detalhes pagamento", to: "/detalhes-pagamento", icon: <PaymentDetailsIcon /> },
-      { label: "Relatório de transações", to: "/relatorio-transacoes", icon: <TransactionsIcon /> },
+      { label: "Det. Pagamento",      to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon /> },
+      { label: "Rel. Transações", to: "/relatorio-transacoes", icon: <TransactionsIcon /> },
     ],
     [],
   );
@@ -309,7 +277,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-1 px-3">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -325,7 +293,7 @@ export default function Sidebar() {
 
               return [base, collapsedPadding, active].join(" ");
             }}
-            end={item.to === "/"}
+            end
           >
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-100 group-hover:bg-white/10">
               {item.icon}
@@ -334,29 +302,29 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
-        <div className="mt-4 border-t border-white/10 pt-4">
-          <p className={isCollapsed ? "sr-only" : "px-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400"}>
-            Report
+        {/* ── Report section ── */}
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <p className={isCollapsed ? "sr-only" : "mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400"}>
+            Relatórios
           </p>
-
-          <div className="mt-2 space-y-1">
+          <div className="space-y-1">
             {reportItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                end
                 title={isCollapsed ? item.label : undefined}
-                className={({ isActive }) => {
-                  const base =
-                    "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition";
-                  const collapsedPadding = isCollapsed ? "justify-center" : "";
-                  const active = isActive
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "text-slate-200 hover:bg-white/10 hover:text-white";
-
-                  return [base, collapsedPadding, active].join(" ");
-                }}
+                className={({ isActive }) =>
+                  [
+                    "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition",
+                    isCollapsed ? "justify-center" : "",
+                    isActive
+                      ? "bg-amber-500 text-white shadow-sm shadow-amber-500/30"
+                      : "text-amber-200/80 hover:bg-amber-500/15 hover:text-amber-200",
+                  ].join(" ")
+                }
               >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-100 group-hover:bg-white/10">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300 group-hover:bg-amber-500/20">
                   {item.icon}
                 </span>
                 <span className={labelClass}>{item.label}</span>
@@ -364,6 +332,7 @@ export default function Sidebar() {
             ))}
           </div>
         </div>
+
       </nav>
 
       <div className="border-t border-white/10 p-3">

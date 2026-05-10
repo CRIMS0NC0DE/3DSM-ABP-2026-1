@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Conversation, Message, ChatUser } from './index';
 import { mockConversations, mockMessages } from './data';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 interface ChatContextType {
   conversations: Conversation[];

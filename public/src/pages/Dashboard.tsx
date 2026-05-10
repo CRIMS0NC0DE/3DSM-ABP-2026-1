@@ -7,12 +7,19 @@ import LeadForm from "../components/Lead/LeadForm";
 import Logo from "../assets/logo_1000.svg";
 import { useAuth } from "../contexts/useAuth";
 
+type LeadStatus =
+  | "Não atendido"
+  | "Em negociação"
+  | "Não lido"
+  | "Agendado"
+  | "Finalizado - vendido";
+
 interface Lead {
   name: string;
   phone: string;
   email: string;
   interest: string;
-  status: "Novo" | "Em andamento" | "Fechado";
+  status: LeadStatus;
 }
 
 const initialLeads: Lead[] = [
@@ -21,21 +28,21 @@ const initialLeads: Lead[] = [
     phone: "(11) 99999-0001",
     email: "123@bol.com.br",
     interest: "Honda Civic",
-    status: "Novo",
+    status: "Não atendido",
   },
   {
     name: "Vini",
     phone: "(11) 99999-0002",
     email: "456@bol.com.br",
     interest: "Toyota Corolla",
-    status: "Em andamento",
+    status: "Em negociação",
   },
   {
     name: "Eric",
     phone: "(11) 99999-0003",
     email: "789@bol.com.br",
     interest: "Jeep Compass",
-    status: "Fechado",
+    status: "Finalizado - vendido",
   },
 ];
 
@@ -51,9 +58,9 @@ export default function Homepage() {
   const { user, logout } = useAuth();
 
   const totalLeads = leads.length;
-  const newLeads = leads.filter((lead) => lead.status === "Novo").length;
-  const inProgressLeads = leads.filter((lead) => lead.status === "Em andamento").length;
-  const closedLeads = leads.filter((lead) => lead.status === "Fechado").length;
+  const newLeads = leads.filter((lead) => lead.status === "Não atendido").length;
+  const inProgressLeads = leads.filter((lead) => lead.status === "Em negociação").length;
+  const closedLeads = leads.filter((lead) => lead.status === "Finalizado - vendido").length;
 
   function handleSaveLead(lead: Lead) {
     setLeads((current) => [lead, ...current]);
@@ -135,10 +142,8 @@ export default function Homepage() {
                 <LeadCard
                   key={`${lead.email}-${index}`}
                   name={lead.name}
-                  phone={lead.phone}
                   interest={lead.interest}
                   states={lead.status}
-                  email={lead.email}
                 />
               ))}
             </div>
