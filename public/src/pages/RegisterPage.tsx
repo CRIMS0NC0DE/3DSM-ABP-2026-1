@@ -3,7 +3,8 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import AuthCard from "../components/Auth/AuthCard";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
-import { getApiErrorMessage, useAuth } from "../contexts/AuthContext";
+import { getApiErrorMessage } from "../contexts/authState";
+import { useAuth } from "../contexts/useAuth";
 
 export default function RegisterPage() {
   const navigate = useNavigate();

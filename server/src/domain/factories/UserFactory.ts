@@ -5,6 +5,7 @@ export interface UserCreationInput {
   nome: string;
   email: string;
   senhaHash: string;
+  hasGeneralManagerProfile: boolean;
   hasLeaderProfile: boolean;
   hasSellerProfile: boolean;
 }

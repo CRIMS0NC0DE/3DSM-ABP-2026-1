@@ -5,7 +5,7 @@ import Navbar from "../components/Layouts/Navbar";
 import LeadCard from "../components/Lead/LeadCard";
 import LeadForm from "../components/Lead/LeadForm";
 import Logo from "../assets/logo_1000.svg";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 
 interface Lead {
   name: string;
@@ -113,4 +113,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
