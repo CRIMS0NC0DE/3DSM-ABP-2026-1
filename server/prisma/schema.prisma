@@ -1,98 +1,137 @@
 datasource db {
-  provider = "postgresql" // ou seu banco de preferência
+  provider = "postgresql"
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Usuario {
-  idUsuario    Int           @id @default(autoincrement())
-  nomeUsuario  String
-  email        String        @unique
-  senha        String
-  liderEquipe  LiderEquipe?
-  vendedor     Vendedor?
+// ============ RBAC Models ============
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique // ATENDENTE, GERENTE, GERENTE_GERAL, ADMIN
+  description String?
+  users       User[]
+  permissions Permission[]
+
+  @@map("roles")
 }
 
-model Equipe {
-  idEquipe     Int           @id @default(autoincrement())
-  nomeEquipe   String
-  lider        LiderEquipe?
-  vendedores   Vendedor[]
+model Permission {
+  id    String   @id @default(cuid())
+  name  String   @unique // criar_lead, editar_lead, ver_dashboard, etc
+  roles Role[]
+
+  @@map("permissions")
 }
 
-model LiderEquipe {
-  idLiderEquipe Int        @id @default(autoincrement())
-  idUsuario     Int        @unique
-  idEquipe      Int        @unique
-  nomeUsuario   String
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  managerId   String
+  manager     User     @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members     User[]   @relation("TeamMembers")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("teams")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+  teamId    String?
+  team      Team?    @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
   
-  usuario       Usuario    @relation(fields: [idUsuario], references: [idUsuario])
-  equipe        Equipe     @relation(fields: [idEquipe], references: [idEquipe])
-  vendedores    Vendedor[]
-}
-
-model Vendedor {
-  idVendedor    Int          @id @default(autoincrement())
-  idUsuario     Int          @unique
-  idEquipe      Int
-  idLiderEquipe Int
-  nomeUsuario   String
-
-  usuario       Usuario      @relation(fields: [idUsuario], references: [idUsuario])
-  equipe        Equipe       @relation(fields: [idEquipe], references: [idEquipe])
-  lider         LiderEquipe  @relation(fields: [idLiderEquipe], references: [idLiderEquipe])
+  // Relacionamento com liderança de time
+  managedTeams Team[] @relation("TeamManager")
   
-  leads         Lead[]
-  vendas        Venda[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos com negócio
+  leads              Lead[]        @relation("AttendantLeads")
+  negotiations       Negotiation[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
 }
 
-model OrigemLead {
-  idOrigem      Int    @id @default(autoincrement())
-  nomeOrigem    String
-  leads         Lead[]
-}
-
-model Carro {
-  idCarro       Int     @id @default(autoincrement())
-  vinChassi     String  @unique
-  placa         String  @unique
-  marca         String
-  modelo        String
-  anoFabricacao Int
-  valorEstoque  Float
-  cor           String
-  
-  leads         Lead[]
-  vendas        Venda[]
-}
+// ============ Business Models ============
 
 model Lead {
-  idLead      Int         @id @default(autoincrement())
-  idVendedor  Int
-  idOrigem    Int
-  idCarro     Int
-  statusLead  String
-  nomeLead    String
-  cliente     String
+  id              String       @id @default(cuid())
+  attendantId     String
+  attendant       User         @relation("AttendantLeads", fields: [attendantId], references: [id], onDelete: Cascade)
+  clientName      String
+  clientEmail     String?
+  clientPhone     String?
+  origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
+  importance      String       // frio, morno, quente
+  status          String       // novo, em_atendimento, convertido, perdido
+  storeId         String?
+  
+  negotiation     Negotiation?
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  vendedor    Vendedor    @relation(fields: [idVendedor], references: [idVendedor])
-  origem      OrigemLead  @relation(fields: [idOrigem], references: [idOrigem])
-  carro       Carro       @relation(fields: [idCarro], references: [idCarro])
-  venda       Venda?
+  @@map("leads")
 }
 
-model Venda {
-  idVenda        Int      @id @default(autoincrement())
-  idLead         Int      @unique
-  idVendedor     Int
-  idCarro        Int
-  valorVenda     Float
-  dataVenda      DateTime @default(now())
-  formaPagamento String
+model Negotiation {
+  id              String   @id @default(cuid())
+  leadId          String   @unique
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  stage           String   // prospecção, qualificação, proposta, fechamento, perdido
+  status          String   // aberta, encerrada
+  importance      String   // frio, morno, quente
+  notes           String?
+  
+  statusHistory   NegotiationHistory[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  lead           Lead     @relation(fields: [idLead], references: [idLead])
-  vendedor       Vendedor @relation(fields: [idVendedor], references: [idVendedor])
-  carro          Carro    @relation(fields: [idCarro], references: [idCarro])
+  @@map("negotiations")
+}
+
+model NegotiationHistory {
+  id              String   @id @default(cuid())
+  negotiationId   String
+  negotiation     Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+  
+  previousStage   String?
+  newStage        String?
+  previousStatus  String?
+  newStatus       String?
+  reason          String?
+  
+  createdAt       DateTime @default(now())
+
+  @@map("negotiation_history")
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  entityType      String   // user, lead, team, negotiation
+  entityId        String
+  action          String   // create, update, delete, login
+  changes         Json?
+  
+  createdAt       DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([entityType, entityId])
 }
