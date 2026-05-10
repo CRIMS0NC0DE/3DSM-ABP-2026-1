@@ -1,6 +1,22 @@
 import type { User } from "../entities/User";
 import { UserFactory, type UserCreationInput } from "./UserFactory";
 
+class GeneralManagerUserFactory extends UserFactory {
+  canCreate(input: UserCreationInput): boolean {
+    return input.hasGeneralManagerProfile;
+  }
+
+  protected factoryMethod(input: UserCreationInput): User {
+    return {
+      id: input.id,
+      nome: input.nome,
+      email: input.email,
+      senhaHash: input.senhaHash,
+      role: "GERENTE_GERAL",
+    };
+  }
+}
+
 class ManagerUserFactory extends UserFactory {
   canCreate(input: UserCreationInput): boolean {
     return input.hasLeaderProfile;
@@ -52,7 +68,13 @@ class DefaultUserFactory extends UserFactory {
 export class RoleBasedUserFactory {
   private readonly factories: UserFactory[];
 
-  constructor(factories: UserFactory[] = [new ManagerUserFactory(), new AttendantUserFactory()]) {
+  constructor(
+    factories: UserFactory[] = [
+      new GeneralManagerUserFactory(),
+      new ManagerUserFactory(),
+      new AttendantUserFactory(),
+    ],
+  ) {
     this.factories = [...factories, new DefaultUserFactory()];
   }
 

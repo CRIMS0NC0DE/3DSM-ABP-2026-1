@@ -14,11 +14,15 @@ import {
 } from "../components/Collaborators/types";
 import Logo from "../assets/logo_1000.svg";
 import Navbar from "../components/Layouts/Navbar";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import type { UserRole } from "../types/auth";
 
 function classNames(...values: Array<string | false | undefined | null>) {
   return values.filter(Boolean).join(" ");
+}
+
+function createDraft(collaborator: Collaborator): Collaborator {
+  return { ...collaborator, permissoes: { ...collaborator.permissoes } };
 }
 
 export default function CollaboratorsPage() {
@@ -42,15 +46,6 @@ export default function CollaboratorsPage() {
   );
 
   useEffect(() => {
-    if (!selected) {
-      setDraft(null);
-      return;
-    }
-    setDraft({ ...selected, permissoes: { ...selected.permissoes } });
-    setActiveTab("permissoes");
-  }, [selected?.id]);
-
-  useEffect(() => {
     localStorage.setItem(COLLABORATORS_STORAGE_KEY, JSON.stringify(collaborators));
   }, [collaborators]);
 
@@ -66,10 +61,6 @@ export default function CollaboratorsPage() {
   }, [collaborators, query, roleFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, roleFilter, pageSize]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -124,7 +115,10 @@ export default function CollaboratorsPage() {
                   <span className="font-semibold text-slate-700">Itens por página</span>
                   <select
                     value={pageSize}
-                    onChange={(event) => setPageSize(Number(event.target.value))}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
                     className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                   >
                     <option value={10}>10</option>
@@ -137,7 +131,10 @@ export default function CollaboratorsPage() {
                   <span className="font-semibold text-slate-700">Filtro</span>
                   <select
                     value={roleFilter}
-                    onChange={(event) => setRoleFilter(event.target.value as UserRole | "TODOS")}
+                    onChange={(event) => {
+                      setRoleFilter(event.target.value as UserRole | "TODOS");
+                      setPage(1);
+                    }}
                     className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                   >
                     <option value="TODOS">Todos</option>
@@ -154,7 +151,10 @@ export default function CollaboratorsPage() {
                 <span className="sr-only">Buscar</span>
                 <input
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Buscar aqui..."
                   className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-900 shadow-sm outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                 />
@@ -181,7 +181,11 @@ export default function CollaboratorsPage() {
                       <button
                         key={collaborator.id}
                         type="button"
-                        onClick={() => setSelectedId(collaborator.id)}
+                        onClick={() => {
+                          setSelectedId(collaborator.id);
+                          setDraft(createDraft(collaborator));
+                          setActiveTab("permissoes");
+                        }}
                         className={classNames(
                           "grid w-full grid-cols-[1.4fr_1.2fr_0.8fr_0.8fr_0.5fr] items-center gap-3 px-4 py-4 text-left text-sm transition",
                           isSelected ? "bg-cyan-50/60" : "hover:bg-slate-50",
@@ -284,7 +288,10 @@ export default function CollaboratorsPage() {
 
                   <button
                     type="button"
-                    onClick={() => setSelectedId(null)}
+                    onClick={() => {
+                      setSelectedId(null);
+                      setDraft(null);
+                    }}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-2xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                     aria-label="Fechar painel"
                     title="Fechar"
@@ -407,7 +414,7 @@ export default function CollaboratorsPage() {
                     type="button"
                     onClick={() => {
                       if (!selected) return;
-                      setDraft({ ...selected, permissoes: { ...selected.permissoes } });
+                      setDraft(createDraft(selected));
                     }}
                     className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
@@ -433,6 +440,7 @@ export default function CollaboratorsPage() {
       </main>
 
       <NewCollaboratorModal
+        key={String(isNewOpen)}
         isOpen={isNewOpen}
         onClose={() => setIsNewOpen(false)}
         onCreate={({ nome, email, telefone, role }) => {
@@ -450,10 +458,10 @@ export default function CollaboratorsPage() {
 
           setCollaborators((current) => [newCollaborator, ...current]);
           setSelectedId(id);
+          setDraft(createDraft(newCollaborator));
           setIsNewOpen(false);
         }}
       />
     </div>
   );
 }
-

@@ -7,6 +7,7 @@ import type { UserRepository } from "../domain/repositories/UserRepository";
 
 type PrismaUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
+    gerenteGeral: true;
     liderEquipe: true;
     vendedor: true;
   };
@@ -20,6 +21,7 @@ function toDomain(user: NonNullable<PrismaUserWithRelations>): User {
     nome: user.nomeUsuario,
     email: user.email,
     senhaHash: user.senha,
+    hasGeneralManagerProfile: Boolean(user.gerenteGeral),
     hasLeaderProfile: Boolean(user.liderEquipe),
     hasSellerProfile: Boolean(user.vendedor),
   });
@@ -30,6 +32,7 @@ export class PrismaUserRepository implements UserRepository {
     const user = await prisma.usuario.findUnique({
       where: { email },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
@@ -42,6 +45,7 @@ export class PrismaUserRepository implements UserRepository {
     const user = await prisma.usuario.findUnique({
       where: { idUsuario: id },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
@@ -65,6 +69,7 @@ export class PrismaUserRepository implements UserRepository {
         senha: user.senhaHash,
       },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
