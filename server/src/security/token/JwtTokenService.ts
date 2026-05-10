@@ -27,7 +27,11 @@ export class JwtTokenService implements TokenService {
   }
 
   verify(token: string): JwtPayload {
-    return jwt.verify(token, this.getJwtSecret()) as JwtPayload;
+    try {
+      return jwt.verify(token, this.getJwtSecret()) as JwtPayload;
+    } catch {
+      throw new AppError("Token invalido ou expirado.", 401);
+    }
   }
 
   private getJwtSecret(): string {
@@ -44,4 +48,3 @@ export class JwtTokenService implements TokenService {
     return (process.env.JWT_EXPIRES_IN || "8h") as JwtExpiresIn;
   }
 }
-

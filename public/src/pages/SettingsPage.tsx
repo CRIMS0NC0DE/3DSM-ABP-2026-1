@@ -1,5 +1,5 @@
 import { type ChangeEvent, useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 
 interface SettingsState {
   avatarUrl: string;
@@ -282,4 +282,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

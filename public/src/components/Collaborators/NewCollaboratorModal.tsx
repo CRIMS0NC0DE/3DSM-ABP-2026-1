@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { UserRole } from "../../types/auth";
 
@@ -15,14 +15,6 @@ export default function NewCollaboratorModal({
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [role, setRole] = useState<UserRole>("USUARIO");
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setNome("");
-    setEmail("");
-    setTelefone("");
-    setRole("USUARIO");
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -127,4 +119,3 @@ export default function NewCollaboratorModal({
     </div>
   );
 }
-

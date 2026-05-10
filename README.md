@@ -14,7 +14,7 @@ Clone o Repositório:
 
 Dentro da pasta do projeto instale as dependências:
 ```bash
-   cd front
+   cd public
    npm i
    cd ..
    cd server
@@ -87,6 +87,10 @@ O sistema segue uma arquitetura em camadas, garantindo **baixo acoplamento** e *
 
 - **Factory Method**
   - Utilizado para criação e diferenciação dos perfis de usuários (RBAC)
+
+- **Decorator**
+   - Utilizado para adicionar auditoria e logs sem alterar as implementações principais.
+   - Aplicado nas abstrações de senha e token.
 
 ---
 

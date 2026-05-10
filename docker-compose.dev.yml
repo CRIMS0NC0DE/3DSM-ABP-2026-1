@@ -31,10 +31,13 @@ services:
       - postgres-1000car-multimarcas
     env_file:
       - ./.env
+    environment:
+      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres-1000car-multimarcas:5432/${DATABASE_NAME}
     volumes:
-      - ./server:/usr/src/abp
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
       - ./logs:/usr/src/app/logs
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
     ports:
       - "3001:3000"
 

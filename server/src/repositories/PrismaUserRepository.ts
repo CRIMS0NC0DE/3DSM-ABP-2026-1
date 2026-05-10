@@ -1,36 +1,30 @@
 import type { Prisma } from "@prisma/client";
 
 import prisma from "../config/db";
-import type { User, UserRole } from "../domain/entities/User";
+import type { User } from "../domain/entities/User";
+import { RoleBasedUserFactory } from "../domain/factories/RoleBasedUserFactory";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 
 type PrismaUserWithRelations = Prisma.UsuarioGetPayload<{
   include: {
+    gerenteGeral: true;
     liderEquipe: true;
     vendedor: true;
   };
 }>;
 
-function mapRole(user: NonNullable<PrismaUserWithRelations>): UserRole {
-  if (user.liderEquipe) {
-    return "GERENTE";
-  }
-
-  if (user.vendedor) {
-    return "ATENDENTE";
-  }
-
-  return "USUARIO";
-}
+const userFactory = new RoleBasedUserFactory();
 
 function toDomain(user: NonNullable<PrismaUserWithRelations>): User {
-  return {
+  return userFactory.create({
     id: user.idUsuario,
     nome: user.nomeUsuario,
     email: user.email,
     senhaHash: user.senha,
-    role: mapRole(user),
-  };
+    hasGeneralManagerProfile: Boolean(user.gerenteGeral),
+    hasLeaderProfile: Boolean(user.liderEquipe),
+    hasSellerProfile: Boolean(user.vendedor),
+  });
 }
 
 export class PrismaUserRepository implements UserRepository {
@@ -38,6 +32,7 @@ export class PrismaUserRepository implements UserRepository {
     const user = await prisma.usuario.findUnique({
       where: { email },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
@@ -50,6 +45,7 @@ export class PrismaUserRepository implements UserRepository {
     const user = await prisma.usuario.findUnique({
       where: { idUsuario: id },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
@@ -73,6 +69,7 @@ export class PrismaUserRepository implements UserRepository {
         senha: user.senhaHash,
       },
       include: {
+        gerenteGeral: true,
         liderEquipe: true,
         vendedor: true,
       },
