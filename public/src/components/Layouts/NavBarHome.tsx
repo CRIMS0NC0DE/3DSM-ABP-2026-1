@@ -42,12 +42,6 @@ export default function Navbar() {
         >
           Entrar
         </Link>
-        <Link
-          to="/register"
-          className="bg-red-500 text-white px-5 py-2 rounded-lg transition hover:bg-red-600"
-        >
-          Cadastrar
-        </Link>
       </div>
 
     </nav>
