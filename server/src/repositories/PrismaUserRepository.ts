@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import prisma from "../config/db";
-import type { User } from "../domain/entities/User";
+import type { User, UserRole } from "../domain/entities/User";
 import { RoleBasedUserFactory } from "../domain/factories/RoleBasedUserFactory";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 
@@ -14,13 +14,21 @@ type PrismaUserWithRelations = Prisma.UsuarioGetPayload<{
 }>;
 
 const userFactory = new RoleBasedUserFactory();
+const USER_ROLES: UserRole[] = ["ADMINISTRADOR", "GERENTE_GERAL", "GERENTE", "ATENDENTE", "USUARIO"];
+
+function toUserRole(role: string | null | undefined): UserRole | undefined {
+  return USER_ROLES.includes(role as UserRole) ? (role as UserRole) : undefined;
+}
 
 function toDomain(user: NonNullable<PrismaUserWithRelations>): User {
+  const explicitRole = toUserRole(user.role);
+
   return userFactory.create({
     id: user.idUsuario,
     nome: user.nomeUsuario,
     email: user.email,
     senhaHash: user.senha,
+    ...(explicitRole ? { explicitRole } : {}),
     hasGeneralManagerProfile: Boolean(user.gerenteGeral),
     hasLeaderProfile: Boolean(user.liderEquipe),
     hasSellerProfile: Boolean(user.vendedor),
@@ -67,6 +75,7 @@ export class PrismaUserRepository implements UserRepository {
         nomeUsuario: user.nome,
         email: user.email,
         senha: user.senhaHash,
+        role: user.role,
       },
       include: {
         gerenteGeral: true,

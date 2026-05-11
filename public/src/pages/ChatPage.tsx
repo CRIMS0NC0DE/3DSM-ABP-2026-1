@@ -1,4 +1,5 @@
-import { ChatProvider, useChat } from "./ChatContext";
+import { ChatProvider } from "./ChatContext";
+import { useChat } from "./chatState";
 import ChatSidebar from "./ChatSidebar";
 import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
