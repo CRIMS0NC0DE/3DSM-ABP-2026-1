@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
-import { Permission } from "../../domain/entities/Permission";
-import { PermissionRepository } from "../../domain/repositories/PermissionRepository";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { Permission } from "../domain/entities/Permission";
+import { PermissionRepository } from "../domain/repositories/PermissionRepository";
 
 export class PrismaPermissionRepository implements PermissionRepository {
   constructor(private prisma: PrismaClient) {}
@@ -34,11 +34,14 @@ export class PrismaPermissionRepository implements PermissionRepository {
   }
 
   async update(id: string, permission: Partial<Permission>): Promise<Permission | null> {
+    const data: Prisma.PermissionUpdateInput = {};
+    if (permission.name !== undefined) {
+      data.name = permission.name;
+    }
+
     const updatedPermission = await this.prisma.permission.update({
       where: { id },
-      data: {
-        name: permission.name,
-      },
+      data,
     });
     return new Permission(updatedPermission.id, updatedPermission.name);
   }

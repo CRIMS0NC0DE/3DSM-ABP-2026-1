@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
-import { Role } from "../../domain/entities/Role";
-import { RoleRepository } from "../../domain/repositories/RoleRepository";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { Role } from "../domain/entities/Role";
+import { RoleRepository } from "../domain/repositories/RoleRepository";
 
 export class PrismaRoleRepository implements RoleRepository {
   constructor(private prisma: PrismaClient) {}
@@ -25,22 +25,29 @@ export class PrismaRoleRepository implements RoleRepository {
   }
 
   async create(role: Role): Promise<Role> {
+    const data: Prisma.RoleCreateInput = { name: role.name };
+    if (role.description !== undefined) {
+      data.description = role.description;
+    }
+
     const createdRole = await this.prisma.role.create({
-      data: {
-        name: role.name,
-        description: role.description,
-      },
+      data,
     });
     return new Role(createdRole.id, createdRole.name, createdRole.description || undefined);
   }
 
   async update(id: string, role: Partial<Role>): Promise<Role | null> {
+    const data: Prisma.RoleUpdateInput = {};
+    if (role.name !== undefined) {
+      data.name = role.name;
+    }
+    if (role.description !== undefined) {
+      data.description = role.description;
+    }
+
     const updatedRole = await this.prisma.role.update({
       where: { id },
-      data: {
-        name: role.name,
-        description: role.description,
-      },
+      data,
     });
     return new Role(updatedRole.id, updatedRole.name, updatedRole.description || undefined);
   }

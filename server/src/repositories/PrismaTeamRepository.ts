@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
-import { Team } from "../../domain/entities/Team";
-import { TeamRepository } from "../../domain/repositories/TeamRepository";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { Team } from "../domain/entities/Team";
+import { TeamRepository } from "../domain/repositories/TeamRepository";
 
 export class PrismaTeamRepository implements TeamRepository {
   constructor(private prisma: PrismaClient) {}
@@ -26,22 +26,32 @@ export class PrismaTeamRepository implements TeamRepository {
   }
 
   async create(team: Team): Promise<Team> {
+    const data: Prisma.TeamCreateInput = {
+      name: team.name,
+    };
+
+    if (team.managerId) {
+      data.manager = { connect: { id: team.managerId } };
+    }
+
     const createdTeam = await this.prisma.team.create({
-      data: {
-        name: team.name,
-        managerId: team.managerId,
-      },
+      data,
     });
     return new Team(createdTeam.id, createdTeam.name, createdTeam.managerId);
   }
 
   async update(id: string, team: Partial<Team>): Promise<Team | null> {
+    const data: Prisma.TeamUpdateInput = {};
+    if (team.name !== undefined) {
+      data.name = team.name;
+    }
+    if (team.managerId !== undefined) {
+      data.manager = team.managerId ? { connect: { id: team.managerId } } : { disconnect: true };
+    }
+
     const updatedTeam = await this.prisma.team.update({
       where: { id },
-      data: {
-        name: team.name,
-        managerId: team.managerId,
-      },
+      data,
     });
     return new Team(updatedTeam.id, updatedTeam.name, updatedTeam.managerId);
   }

@@ -29,8 +29,8 @@ model Permission {
 model Team {
   id          String   @id @default(cuid())
   name        String
-  managerId   String
-  manager     User     @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  managerId   String?
+  manager     User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
   members     User[]   @relation("TeamMembers")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -40,6 +40,7 @@ model Team {
 
 model User {
   id        String   @id @default(cuid())
+  name      String
   email     String   @unique
   password  String
   roleId    String
@@ -87,8 +88,8 @@ model Negotiation {
   id              String   @id @default(cuid())
   leadId          String   @unique
   lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   stage           String   // prospecção, qualificação, proposta, fechamento, perdido
   status          String   // aberta, encerrada

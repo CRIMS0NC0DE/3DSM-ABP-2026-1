@@ -36,7 +36,11 @@ export class TeamService {
       throw new AppError("Equipe não encontrada", 404);
     }
 
-    const updatedTeam = await this.teamRepository.update(id, { name, managerId });
+    const updates: Partial<Team> = {};
+    if (name !== undefined) updates.name = name;
+    if (managerId !== undefined) updates.managerId = managerId;
+
+    const updatedTeam = await this.teamRepository.update(id, updates);
     if (!updatedTeam) {
       throw new AppError("Erro ao atualizar equipe", 500);
     }

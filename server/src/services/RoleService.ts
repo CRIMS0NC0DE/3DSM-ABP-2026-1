@@ -48,7 +48,11 @@ export class RoleService {
       }
     }
 
-    const updatedRole = await this.roleRepository.update(id, { name, description });
+    const updates: Partial<Role> = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+
+    const updatedRole = await this.roleRepository.update(id, updates);
     if (!updatedRole) {
       throw new AppError("Erro ao atualizar role", 500);
     }

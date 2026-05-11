@@ -1,7 +1,7 @@
 export class Role {
   id: string;
   name: string;
-  description?: string;
+  description: string | undefined;
 
   constructor(id: string, name: string, description?: string) {
     this.id = id;

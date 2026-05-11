@@ -2,9 +2,10 @@ export type UserRole = "ADMIN" | "GERENTE_GERAL" | "GERENTE" | "ATENDENTE";
 
 export interface AuthUser {
   id: string;
+  nome: string;
   email: string;
   role: UserRole;
-  teamId?: string | null;
+  teamId: string | null;
 }
 
 export interface LoginResponse {
