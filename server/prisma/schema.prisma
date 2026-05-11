@@ -7,10 +7,15 @@ generator client {
 }
 
 model Usuario {
-  idUsuario   Int    @id @default(autoincrement())
+  idUsuario   Int       @id @default(autoincrement())
   nomeUsuario String
-  email       String @unique
+  email       String    @unique
   senha       String
+  telefone    String?
+  role        String    @default("USUARIO")
+  ativo       Boolean   @default(true)
+  ultimoLogin DateTime?
+  permissoes  Json?
 
   // Relações 1:1 opcionais (torna-se)
   gerenteGeral GerenteGeral?

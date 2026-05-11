@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 
 import NewCollaboratorModal from "../components/Collaborators/NewCollaboratorModal";
 import RolePill from "../components/Collaborators/RolePill";
@@ -14,6 +14,8 @@ import {
 } from "../components/Collaborators/types";
 import Logo from "../assets/logo_1000.svg";
 import Navbar from "../components/Layouts/Navbar";
+import { createCollaborator, listCollaborators, updateCollaborator as updateCollaboratorRequest } from "../services/api";
+import { getApiErrorMessage } from "../contexts/authState";
 import { useAuth } from "../contexts/useAuth";
 import type { UserRole } from "../types/auth";
 
@@ -26,8 +28,8 @@ function createDraft(collaborator: Collaborator): Collaborator {
 }
 
 export default function CollaboratorsPage() {
-  const { user, logout } = useAuth();
-  const isAdmin = user?.role === "ADMINISTRADOR";
+  const { token, user, logout } = useAuth();
+  const canManageCollaborators = Boolean(user);
 
   const [collaborators, setCollaborators] = useState<Collaborator[]>(() => safeReadStoredCollaborators());
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export default function CollaboratorsPage() {
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [isNewOpen, setIsNewOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
 
   const selected = useMemo(
     () => (selectedId ? collaborators.find((collaborator) => collaborator.id === selectedId) || null : null),
@@ -48,6 +52,19 @@ export default function CollaboratorsPage() {
   useEffect(() => {
     localStorage.setItem(COLLABORATORS_STORAGE_KEY, JSON.stringify(collaborators));
   }, [collaborators]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    void listCollaborators(token)
+      .then(({ collaborators: apiCollaborators }) => {
+        setCollaborators(apiCollaborators);
+        setApiErrorMessage(null);
+      })
+      .catch((error) => {
+        setApiErrorMessage(getApiErrorMessage(error));
+      });
+  }, [token]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = normalizeText(query);
@@ -67,8 +84,47 @@ export default function CollaboratorsPage() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
+  async function persistCollaborator(nextCollaborator: Collaborator) {
+    setCollaborators((current) => current.map((item) => (item.id === nextCollaborator.id ? nextCollaborator : item)));
+    setDraft((current) => (current?.id === nextCollaborator.id ? createDraft(nextCollaborator) : current));
+
+    if (!token) return;
+
+    try {
+      const { collaborator: savedCollaborator } = await updateCollaboratorRequest(token, nextCollaborator.id, {
+        nome: nextCollaborator.nome,
+        telefone: nextCollaborator.telefone,
+        role: nextCollaborator.role,
+        ativo: nextCollaborator.ativo,
+        permissoes: nextCollaborator.permissoes,
+      });
+
+      setCollaborators((current) => current.map((item) => (item.id === savedCollaborator.id ? savedCollaborator : item)));
+      setDraft((current) => (current?.id === savedCollaborator.id ? createDraft(savedCollaborator) : current));
+      setApiErrorMessage(null);
+    } catch (error) {
+      setApiErrorMessage(getApiErrorMessage(error));
+    }
+  }
+
   function updateCollaborator(id: string, updater: (current: Collaborator) => Collaborator) {
-    setCollaborators((current) => current.map((item) => (item.id === id ? updater(item) : item)));
+    const currentCollaborator = collaborators.find((item) => item.id === id);
+    if (!currentCollaborator) return;
+
+    void persistCollaborator(updater(currentCollaborator));
+  }
+
+  function selectCollaborator(collaborator: Collaborator) {
+    setSelectedId(collaborator.id);
+    setDraft(createDraft(collaborator));
+    setActiveTab("permissoes");
+    setSuccessMessage(null);
+  }
+
+  function handleCollaboratorRowKeyDown(event: KeyboardEvent<HTMLDivElement>, collaborator: Collaborator) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    selectCollaborator(collaborator);
   }
 
   return (
@@ -89,16 +145,22 @@ export default function CollaboratorsPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {!isAdmin ? (
-                <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 shadow-sm">
-                  Apenas <strong>administradores</strong> podem editar permissões.
+              {apiErrorMessage ? (
+                <div className="rounded-3xl border border-[#b81414]/30 bg-[#b81414]/10 px-5 py-4 text-sm text-[#690b0b] shadow-sm">
+                  {apiErrorMessage}
+                </div>
+              ) : null}
+
+              {successMessage ? (
+                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 shadow-sm">
+                  {successMessage}
                 </div>
               ) : null}
 
               <button
                 type="button"
                 onClick={() => setIsNewOpen(true)}
-                disabled={!isAdmin}
+                disabled={!canManageCollaborators}
                 className="inline-flex items-center justify-center rounded-3xl bg-[#b81414] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9f1313] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 + Novo usuário
@@ -178,16 +240,14 @@ export default function CollaboratorsPage() {
                   paginated.map((collaborator) => {
                     const isSelected = collaborator.id === selectedId;
                     return (
-                      <button
+                      <div
                         key={collaborator.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedId(collaborator.id);
-                          setDraft(createDraft(collaborator));
-                          setActiveTab("permissoes");
-                        }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => selectCollaborator(collaborator)}
+                        onKeyDown={(event) => handleCollaboratorRowKeyDown(event, collaborator)}
                         className={classNames(
-                          "grid w-full grid-cols-[1.4fr_1.2fr_0.8fr_0.8fr_0.5fr] items-center gap-3 px-4 py-4 text-left text-sm transition",
+                          "grid w-full cursor-pointer grid-cols-[1.4fr_1.2fr_0.8fr_0.8fr_0.5fr] items-center gap-3 px-4 py-4 text-left text-sm outline-none transition focus:bg-cyan-50/60 focus:ring-2 focus:ring-cyan-200",
                           isSelected ? "bg-cyan-50/60" : "hover:bg-slate-50",
                         )}
                       >
@@ -201,7 +261,7 @@ export default function CollaboratorsPage() {
                           <Switch
                             checked={collaborator.ativo}
                             label={`Status de ${collaborator.nome}`}
-                            disabled={!isAdmin}
+                            disabled={!canManageCollaborators}
                             onChange={(next) =>
                               updateCollaborator(collaborator.id, (current) => ({
                                 ...current,
@@ -210,7 +270,7 @@ export default function CollaboratorsPage() {
                             }
                           />
                         </span>
-                      </button>
+                      </div>
                     );
                   })
                 )}
@@ -347,7 +407,7 @@ export default function CollaboratorsPage() {
                             <span className="text-sm font-semibold text-slate-700">Tipo de usuário</span>
                             <select
                               value={draft.role}
-                              disabled={!isAdmin}
+                              disabled={!canManageCollaborators}
                               onChange={(event) => {
                                 const nextRole = event.target.value as UserRole;
                                 setDraft((current) =>
@@ -386,7 +446,7 @@ export default function CollaboratorsPage() {
                             <span className="text-sm font-semibold text-slate-800">{module.label}</span>
                             <Switch
                               checked={Boolean(draft.permissoes[module.key])}
-                              disabled={!isAdmin}
+                              disabled={!canManageCollaborators}
                               label={`Permissão para ${module.label}`}
                               onChange={(next) =>
                                 setDraft((current) =>
@@ -423,10 +483,11 @@ export default function CollaboratorsPage() {
 
                   <button
                     type="button"
-                    disabled={!isAdmin || !draft}
+                    disabled={!canManageCollaborators || !draft}
                     onClick={() => {
                       if (!draft) return;
-                      updateCollaborator(draft.id, () => draft);
+                      void persistCollaborator(draft);
+                      setSuccessMessage(`${draft.nome} foi atualizado com sucesso.`);
                     }}
                     className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -442,23 +503,29 @@ export default function CollaboratorsPage() {
       <NewCollaboratorModal
         key={String(isNewOpen)}
         isOpen={isNewOpen}
+        existingEmails={collaborators.map((collaborator) => collaborator.email)}
         onClose={() => setIsNewOpen(false)}
-        onCreate={({ nome, email, telefone, role }) => {
-          const id = `col-${globalThis.crypto?.randomUUID?.() ?? String(Date.now())}`;
-          const newCollaborator: Collaborator = {
-            id,
+        onCreate={async ({ nome, email, telefone, role, senha }) => {
+          if (!token) {
+            throw new Error("Sessao expirada. Faca login novamente.");
+          }
+
+          const { collaborator: newCollaborator } = await createCollaborator(token, {
             nome,
             email,
             telefone,
             role,
-            ativo: true,
-            lastLoginAt: null,
-            permissoes: buildDefaultPermissoes(role),
-          };
+            senha,
+          });
 
           setCollaborators((current) => [newCollaborator, ...current]);
-          setSelectedId(id);
+          setSelectedId(newCollaborator.id);
           setDraft(createDraft(newCollaborator));
+          setActiveTab("permissoes");
+          setQuery("");
+          setRoleFilter("TODOS");
+          setPage(1);
+          setSuccessMessage(`${nome} foi cadastrado com sucesso.`);
           setIsNewOpen(false);
         }}
       />
