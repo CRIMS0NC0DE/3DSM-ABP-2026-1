@@ -16,6 +16,7 @@ import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
+import RelatoryPage from "./pages/RelatoryPage";
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/notificacoes" element={<NotificationsPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
             <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
