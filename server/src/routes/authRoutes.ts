@@ -16,7 +16,7 @@ export function createAuthRoutes(authService: AuthService) {
   router.get(
     "/management",
     asyncHandler(authenticate(authService)),
-    authorize("ADMINISTRADOR", "GERENTE_GERAL", "GERENTE"),
+    authorize("ADMIN", "GERENTE_GERAL", "GERENTE"),
     asyncHandler(async (request, response) => {
       response.status(200).json({
         message: "Acesso liberado para area gerencial.",
