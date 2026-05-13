@@ -17,7 +17,7 @@ export default function NewCollaboratorModal({
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
-  const [role, setRole] = useState<UserRole>("USUARIO");
+  const [role, setRole] = useState<UserRole>("ATENDENTE");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -155,11 +155,11 @@ export default function NewCollaboratorModal({
               onChange={(event) => setRole(event.target.value as UserRole)}
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
             >
-              <option value="USUARIO">Usuário</option>
+              <option value="ATENDENTE">Usuário</option>
               <option value="ATENDENTE">Atendente</option>
               <option value="GERENTE">Gerente</option>
               <option value="GERENTE_GERAL">Gerente geral</option>
-              <option value="ADMINISTRADOR">Administrador</option>
+              <option value="ADMIN">Administrador</option>
             </select>
           </label>
 

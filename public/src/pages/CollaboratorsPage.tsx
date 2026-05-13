@@ -200,11 +200,11 @@ export default function CollaboratorsPage() {
                     className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                   >
                     <option value="TODOS">Todos</option>
-                    <option value="ADMINISTRADOR">Administrador</option>
+                    <option value="ADMIN">Administrador</option>
                     <option value="GERENTE_GERAL">Gerente geral</option>
                     <option value="GERENTE">Gerente</option>
                     <option value="ATENDENTE">Atendente</option>
-                    <option value="USUARIO">Usuário</option>
+                    <option value="ATENDENTE">Usuário</option>
                   </select>
                 </label>
               </div>
@@ -422,11 +422,11 @@ export default function CollaboratorsPage() {
                               }}
                               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-50"
                             >
-                              <option value="USUARIO">Usuário</option>
+                              <option value="ATENDENTE">Usuário</option>
                               <option value="ATENDENTE">Atendente</option>
                               <option value="GERENTE">Gerente</option>
                               <option value="GERENTE_GERAL">Gerente geral</option>
-                              <option value="ADMINISTRADOR">Administrador</option>
+                              <option value="ADMIN">Administrador</option>
                             </select>
                           </label>
                         </div>
