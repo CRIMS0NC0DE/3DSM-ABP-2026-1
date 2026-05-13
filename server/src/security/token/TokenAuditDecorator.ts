@@ -2,7 +2,7 @@ import type { GeneratedToken, JwtPayload } from "./TokenService";
 import { TokenServiceDecorator } from "./TokenServiceDecorator";
 
 export class TokenAuditDecorator extends TokenServiceDecorator {
-  generate(input: { userId: number; email: string; role: JwtPayload["role"] }): GeneratedToken {
+  generate(input: { userId: string; email: string; role: JwtPayload["role"] }): GeneratedToken {
     const generatedToken = super.generate(input);
 
     console.info(`[auth][jwt] token gerado para userId=${input.userId} role=${input.role}`);

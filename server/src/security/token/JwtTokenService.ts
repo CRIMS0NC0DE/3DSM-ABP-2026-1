@@ -6,7 +6,7 @@ import type { GeneratedToken, JwtPayload, TokenService } from "./TokenService";
 type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
 
 export class JwtTokenService implements TokenService {
-  generate(input: { userId: number; email: string; role: JwtPayload["role"] }): GeneratedToken {
+  generate(input: { userId: string; email: string; role: JwtPayload["role"] }): GeneratedToken {
     const expiresIn = this.getJwtExpiresIn();
     const token = jwt.sign(
       {

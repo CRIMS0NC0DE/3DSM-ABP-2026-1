@@ -23,6 +23,9 @@ export function authenticate(authService: AuthService) {
     const user = await authService.getUserFromTokenSubject(payload.sub);
 
     request.authUser = user;
+    request.userId = user.id;
+    request.userRole = user.role;
+    request.userTeamId = user.teamId ?? null;
     next();
   };
 }

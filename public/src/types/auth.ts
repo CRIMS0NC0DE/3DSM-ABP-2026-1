@@ -1,10 +1,11 @@
-export type UserRole = "ADMINISTRADOR" | "GERENTE_GERAL" | "GERENTE" | "ATENDENTE" | "USUARIO";
+export type UserRole = "ADMIN" | "GERENTE_GERAL" | "GERENTE" | "ATENDENTE";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   nome: string;
   email: string;
   role: UserRole;
+  teamId: string | null;
 }
 
 export interface LoginResponse {
