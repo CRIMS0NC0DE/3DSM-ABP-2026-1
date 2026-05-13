@@ -9,10 +9,14 @@ class ExplicitRoleUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
-      role: input.explicitRole ?? "USUARIO",
+      password: input.passwordHash,
+      roleId: "",
+      role: input.explicitRole ?? "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -25,10 +29,14 @@ class GeneralManagerUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "GERENTE_GERAL",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -41,10 +49,14 @@ class ManagerUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "GERENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -57,10 +69,14 @@ class AttendantUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -73,10 +89,14 @@ class DefaultUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
-      role: "USUARIO",
+      password: input.passwordHash,
+      roleId: "",
+      role: "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }

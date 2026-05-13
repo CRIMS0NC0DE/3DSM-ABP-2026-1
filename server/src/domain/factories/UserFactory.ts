@@ -2,10 +2,10 @@ import type { User } from "../entities/User";
 import type { UserRole } from "../entities/User";
 
 export interface UserCreationInput {
-  id: number;
-  nome: string;
+  id: string;
+  name: string;
   email: string;
-  senhaHash: string;
+  passwordHash: string;
   explicitRole?: UserRole;
   hasGeneralManagerProfile: boolean;
   hasLeaderProfile: boolean;

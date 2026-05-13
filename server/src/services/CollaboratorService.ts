@@ -6,226 +6,108 @@ import type { UserRole } from "../domain/entities/User";
 import { AppError } from "../errors/AppError";
 import type { PasswordHasher } from "../security/password/PasswordHasher";
 
-const USER_ROLES = ["ADMINISTRADOR", "GERENTE_GERAL", "GERENTE", "ATENDENTE", "USUARIO"] as const;
-
-const PERMISSION_KEYS = [
-  "dashboard",
-  "colaboradores",
-  "garagem",
-  "leads",
-  "notificacoes",
-  "configuracoes",
-  "detalhes_pagamento",
-  "relatorio",
-  "transacoes",
-  "pontos",
-] as const;
-
-type PermissionKey = (typeof PERMISSION_KEYS)[number];
-type Permissions = Record<PermissionKey, boolean>;
-
-const permissionsSchema = z
-  .object(
-    PERMISSION_KEYS.reduce(
-      (shape, key) => ({
-        ...shape,
-        [key]: z.boolean().optional(),
-      }),
-      {} as Record<PermissionKey, z.ZodOptional<z.ZodBoolean>>,
-    ),
-  )
-  .partial();
+const USER_ROLES = ["ADMIN", "GERENTE_GERAL", "GERENTE", "ATENDENTE"] as const;
 
 const createCollaboratorSchema = z.object({
-  nome: z.string().min(3, "Informe o nome completo."),
+  name: z.string().min(3, "Informe o nome completo."),
   email: z.string().email("Informe um e-mail valido."),
-  senha: z.string().min(6, "A senha deve ter no minimo 6 caracteres."),
-  telefone: z.string().optional().default(""),
-  role: z.enum(USER_ROLES).default("USUARIO"),
-  permissoes: permissionsSchema.optional(),
+  password: z.string().min(6, "A senha deve ter no minimo 6 caracteres."),
+  role: z.enum(USER_ROLES).default("ATENDENTE"),
+  teamId: z.string().nullable().optional(),
 });
 
 const updateCollaboratorSchema = z.object({
-  nome: z.string().min(3, "Informe o nome completo.").optional(),
-  telefone: z.string().optional(),
+  name: z.string().min(3, "Informe o nome completo.").optional(),
   role: z.enum(USER_ROLES).optional(),
-  ativo: z.boolean().optional(),
-  permissoes: permissionsSchema.optional(),
+  teamId: z.string().nullable().optional(),
 });
 
-type PrismaCollaborator = {
-  idUsuario: number;
-  nomeUsuario: string;
-  email: string;
-  telefone: string | null;
-  role: string;
-  ativo: boolean;
-  ultimoLogin: Date | null;
-  permissoes: Prisma.JsonValue | null;
-};
+type PrismaCollaborator = Prisma.UserGetPayload<{ include: { role: true } }>;
 
 export interface CollaboratorResponse {
   id: string;
-  nome: string;
+  name: string;
   email: string;
-  telefone: string;
   role: UserRole;
-  ativo: boolean;
-  lastLoginAt: string | null;
-  permissoes: Permissions;
+  teamId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+async function getRoleId(roleName: UserRole): Promise<string> {
+  const role = await prisma.role.findUnique({ where: { name: roleName }, select: { id: true } });
+
+  if (!role) {
+    throw new AppError(`Perfil ${roleName} nao cadastrado. Execute o seed do RBAC.`, 500);
+  }
+
+  return role.id;
 }
 
 export class CollaboratorService {
   constructor(private readonly passwordHasher: PasswordHasher) {}
 
   async list(): Promise<CollaboratorResponse[]> {
-    const collaborators = await prisma.usuario.findMany({
-      orderBy: {
-        nomeUsuario: "asc",
-      },
-    });
+    const collaborators = await prisma.user.findMany({ include: { role: true }, orderBy: { name: "asc" } });
 
-    return collaborators.map((collaborator) => this.toResponse(collaborator));
+    return collaborators.map((c) => this.toResponse(c));
   }
 
   async create(input: unknown): Promise<CollaboratorResponse> {
     const parsed = createCollaboratorSchema.parse(input);
     const normalizedEmail = parsed.email.trim().toLowerCase();
 
-    const existingCollaborator = await prisma.usuario.findUnique({
-      where: { email: normalizedEmail },
-    });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) throw new AppError("Ja existe um colaborador cadastrado com esse e-mail.", 409);
 
-    if (existingCollaborator) {
-      throw new AppError("Ja existe um colaborador cadastrado com esse e-mail.", 409);
-    }
+    const passwordHash = await this.passwordHasher.hash(parsed.password);
+    const roleId = await getRoleId(parsed.role);
 
-    const senhaHash = await this.passwordHasher.hash(parsed.senha);
-    const permissions = {
-      ...this.buildDefaultPermissions(parsed.role),
-      ...(parsed.permissoes ?? {}),
+    const createData: any = {
+      name: parsed.name.trim(),
+      email: normalizedEmail,
+      password: passwordHash,
+      role: { connect: { id: roleId } },
     };
 
-    const collaborator = await prisma.usuario.create({
-      data: {
-        nomeUsuario: parsed.nome.trim(),
-        email: normalizedEmail,
-        senha: senhaHash,
-        telefone: parsed.telefone.trim(),
-        role: parsed.role,
-        ativo: true,
-        permissoes: permissions,
-      },
-    });
+    if (parsed.teamId) {
+      createData.team = { connect: { id: parsed.teamId } };
+    }
+
+    const collaborator = await prisma.user.create({ data: createData, include: { role: true } });
 
     return this.toResponse(collaborator);
   }
 
-  async update(id: number, input: unknown): Promise<CollaboratorResponse> {
-    if (!Number.isInteger(id)) {
-      throw new AppError("Colaborador invalido.", 400);
-    }
-
+  async update(id: string, input: unknown): Promise<CollaboratorResponse> {
     const parsed = updateCollaboratorSchema.parse(input);
-    const currentCollaborator = await prisma.usuario.findUnique({
-      where: { idUsuario: id },
-    });
 
-    if (!currentCollaborator) {
-      throw new AppError("Colaborador nao encontrado.", 404);
-    }
+    const current = await prisma.user.findUnique({ where: { id }, include: { role: true } });
+    if (!current) throw new AppError("Colaborador nao encontrado.", 404);
 
-    const nextRole = parsed.role ?? this.toUserRole(currentCollaborator.role);
-    const currentPermissions = this.parsePermissions(currentCollaborator.permissoes, nextRole);
-    const shouldResetPermissions = Boolean(parsed.role && parsed.role !== currentCollaborator.role && !parsed.permissoes);
+    const data: Prisma.UserUpdateInput = {};
 
-    const updateData: Prisma.UsuarioUpdateInput = {
-      permissoes: shouldResetPermissions
-        ? this.buildDefaultPermissions(nextRole)
-        : {
-            ...currentPermissions,
-            ...(parsed.permissoes ?? {}),
-          },
-    };
-
-    if (parsed.nome !== undefined) {
-      updateData.nomeUsuario = parsed.nome.trim();
-    }
-
-    if (parsed.telefone !== undefined) {
-      updateData.telefone = parsed.telefone.trim();
-    }
-
+    if (parsed.name !== undefined) data.name = parsed.name.trim();
+    if (parsed.teamId !== undefined) data.team = parsed.teamId ? { connect: { id: parsed.teamId } } : { disconnect: true };
     if (parsed.role !== undefined) {
-      updateData.role = parsed.role;
+      const roleId = await getRoleId(parsed.role);
+      data.role = { connect: { id: roleId } } as any;
     }
 
-    if (parsed.ativo !== undefined) {
-      updateData.ativo = parsed.ativo;
-    }
+    const updated = await prisma.user.update({ where: { id }, data, include: { role: true } });
 
-    const collaborator = await prisma.usuario.update({
-      where: { idUsuario: id },
-      data: updateData,
-    });
-
-    return this.toResponse(collaborator);
+    return this.toResponse(updated);
   }
 
   private toResponse(collaborator: PrismaCollaborator): CollaboratorResponse {
-    const role = this.toUserRole(collaborator.role);
-
     return {
-      id: String(collaborator.idUsuario),
-      nome: collaborator.nomeUsuario,
+      id: collaborator.id,
+      name: collaborator.name,
       email: collaborator.email,
-      telefone: collaborator.telefone ?? "",
-      role,
-      ativo: collaborator.ativo,
-      lastLoginAt: collaborator.ultimoLogin?.toISOString() ?? null,
-      permissoes: this.parsePermissions(collaborator.permissoes, role),
-    };
-  }
-
-  private toUserRole(role: string): UserRole {
-    return USER_ROLES.includes(role as UserRole) ? (role as UserRole) : "USUARIO";
-  }
-
-  private parsePermissions(value: Prisma.JsonValue | null, role: UserRole): Permissions {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return this.buildDefaultPermissions(role);
-    }
-
-    return {
-      ...this.buildDefaultPermissions(role),
-      ...(value as Partial<Permissions>),
-    };
-  }
-
-  private buildDefaultPermissions(role: UserRole): Permissions {
-    const allEnabled = PERMISSION_KEYS.reduce((permissions, key) => {
-      permissions[key] = true;
-      return permissions;
-    }, {} as Permissions);
-
-    if (role === "ADMINISTRADOR") {
-      return allEnabled;
-    }
-
-    if (role === "GERENTE_GERAL" || role === "GERENTE") {
-      return {
-        ...allEnabled,
-        configuracoes: false,
-        colaboradores: false,
-      };
-    }
-
-    return {
-      ...allEnabled,
-      configuracoes: false,
-      colaboradores: false,
-      detalhes_pagamento: false,
-      transacoes: false,
+      role: collaborator.role.name as UserRole,
+      teamId: collaborator.teamId ?? null,
+      createdAt: collaborator.createdAt.toISOString(),
+      updatedAt: collaborator.updatedAt.toISOString(),
     };
   }
 }
