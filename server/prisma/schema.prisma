@@ -28,7 +28,7 @@ model Permission {
 
 model Team {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   managerId   String?
   manager     User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
   members     User[]   @relation("TeamMembers")
@@ -71,10 +71,16 @@ model Lead {
   clientName      String
   clientEmail     String?
   clientPhone     String?
+  clientCpf       String?
   origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
   importance      String       // frio, morno, quente
   status          String       // novo, em_atendimento, convertido, perdido
   storeId         String?
+  
+  subject            String?
+  firstInteractionAt DateTime?
+  externalId         String? @unique
+
   
   negotiation     Negotiation?
   
@@ -94,6 +100,7 @@ model Negotiation {
   stage           String   // prospecção, qualificação, proposta, fechamento, perdido
   status          String   // aberta, encerrada
   importance      String   // frio, morno, quente
+  reason          String?
   notes           String?
   
   statusHistory   NegotiationHistory[]

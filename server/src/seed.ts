@@ -1,10 +1,7 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
-
+import bcrypt from "bcryptjs";
 import { Permission } from "./domain/entities/Permission";
 import { Role } from "./domain/entities/Role";
-
-const prisma = new PrismaClient();
+import prisma from "./config/db";
 
 const rolePermissions: Record<string, string[]> = {
   [Role.ATENDENTE]: [
