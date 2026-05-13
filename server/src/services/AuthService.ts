@@ -84,6 +84,37 @@ export class AuthService {
     };
   }
 
+  async register(input: unknown): Promise<LoginResponse> {
+    const parsed = createUserSchema.parse(input);
+    const normalizedEmail = parsed.email.trim().toLowerCase();
+
+    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
+    if (existingUser) {
+      throw new AppError("Esse e-mail ja esta cadastrado.", 409);
+    }
+
+    const hashedPassword = await this.passwordHasher.hash(parsed.senha);
+    const user = await this.userRepository.create({
+      name: parsed.nome,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: parsed.role,
+      teamId: parsed.teamId ?? null,
+    });
+
+    const generatedToken = this.tokenService.generate({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return {
+      token: generatedToken.token,
+      expiresIn: generatedToken.expiresIn,
+      user: this.sanitizeUser(user),
+    };
+  }
+
   async createUser(actor: AuthenticatedUser, input: unknown): Promise<AuthenticatedUser> {
     const parsed = createUserSchema.parse(input);
     const normalizedEmail = parsed.email.trim().toLowerCase();

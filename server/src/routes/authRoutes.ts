@@ -23,7 +23,7 @@ export function createAuthRoutes(authService: AuthService) {
     "/users",
     asyncHandler(authenticate(authService)),
     authorize("ADMIN", "GERENTE"),
-    asyncHandler(controller.register),
+    asyncHandler(controller.createUser),
   );
   router.put(
     "/users/:id",
@@ -39,8 +39,6 @@ export function createAuthRoutes(authService: AuthService) {
   );
   router.post(
     "/register",
-    asyncHandler(authenticate(authService)),
-    authorize("ADMIN", "GERENTE"),
     asyncHandler(controller.register),
   );
   router.get(

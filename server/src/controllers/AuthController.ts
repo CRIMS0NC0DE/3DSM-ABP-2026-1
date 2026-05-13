@@ -12,6 +12,11 @@ export class AuthController {
   };
 
   register = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.authService.register(request.body);
+    response.status(201).json(result);
+  };
+
+  createUser = async (request: Request, response: Response): Promise<void> => {
     const actor = request.authUser;
     if (!actor) {
       response.status(401).json({ message: "Usuario nao autenticado." });
