@@ -6,118 +6,140 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Usuario {
-  idUsuario   Int    @id @default(autoincrement())
-  nomeUsuario String
-  email       String @unique
-  senha       String
+// ============ RBAC Models ============
 
-  // Relações 1:1 opcionais (torna-se)
-  gerenteGeral GerenteGeral?
-  liderEquipe  LiderEquipe?
-  vendedor     Vendedor?
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique // ATENDENTE, GERENTE, GERENTE_GERAL, ADMIN
+  description String?
+  users       User[]
+  permissions Permission[]
+
+  @@map("roles")
 }
 
-model GerenteGeral {
-  idGerente   Int    @id @default(autoincrement())
-  idUsuario   Int    @unique
-  nivelAcesso String
+model Permission {
+  id    String   @id @default(cuid())
+  name  String   @unique // criar_lead, editar_lead, ver_dashboard, etc
+  roles Role[]
 
-  usuario Usuario  @relation(fields: [idUsuario], references: [idUsuario])
-  equipes Equipe[] // Gerencia várias equipes
+  @@map("permissions")
 }
 
-model Equipe {
-  idEquipe   Int    @id @default(autoincrement())
-  idGerente  Int
-  nomeEquipe String
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  managerId   String?
+  manager     User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members     User[]   @relation("TeamMembers")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  gerente    GerenteGeral @relation(fields: [idGerente], references: [idGerente])
-  lider      LiderEquipe? // 1:1 com Equipe
-  vendedores Vendedor[]
+  @@map("teams")
 }
 
-model LiderEquipe {
-  idLiderEquipe Int @id @default(autoincrement())
-  idUsuario     Int @unique
-  idEquipe      Int @unique
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+  teamId    String?
+  team      Team?    @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
+  
+  // Relacionamento com liderança de time
+  managedTeams Team[] @relation("TeamManager")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  usuario    Usuario    @relation(fields: [idUsuario], references: [idUsuario])
-  equipe     Equipe     @relation(fields: [idEquipe], references: [idEquipe])
-  vendedores Vendedor[] // Supervisão direta dos vendedores
+  // Relacionamentos com negócio
+  leads              Lead[]        @relation("AttendantLeads")
+  negotiations       Negotiation[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
 }
 
-model Vendedor {
-  idVendedor    Int @id @default(autoincrement())
-  idUsuario     Int @unique
-  idEquipe      Int
-  idLiderEquipe Int
-
-  usuario Usuario     @relation(fields: [idUsuario], references: [idUsuario])
-  equipe  Equipe      @relation(fields: [idEquipe], references: [idEquipe])
-  lider   LiderEquipe @relation(fields: [idLiderEquipe], references: [idLiderEquipe])
-
-  leads  Lead[]
-  vendas Venda[]
-}
-
-model Cliente {
-  idCliente       Int     @id @default(autoincrement())
-  nomeCliente     String
-  emailCliente    String  @unique
-  cpfCliente      String  @unique
-  telefoneCelular String
-  descricao       String?
-
-  leads Lead[]
-}
-
-model OrigemLead {
-  idOrigem   Int    @id @default(autoincrement())
-  nomeOrigem String
-  leads      Lead[]
-}
-
-model Carro {
-  idCarro       Int     @id @default(autoincrement())
-  vinChassi     String  @unique @map("vin_chassi")
-  placa         String  @unique
-  marca         String
-  modelo        String
-  anoFabricacao Int
-  valorEstoque  Decimal @db.Decimal(12, 2)
-  cor           String
-
-  leads  Lead[]
-  vendas Venda[]
-}
+// ============ Business Models ============
 
 model Lead {
-  idLead     Int    @id @default(autoincrement())
-  idCliente  Int
-  idVendedor Int
-  idOrigem   Int
-  idCarro    Int
-  statusLead String
-  nomeLead   String
+  id              String       @id @default(cuid())
+  attendantId     String
+  attendant       User         @relation("AttendantLeads", fields: [attendantId], references: [id], onDelete: Cascade)
+  clientName      String
+  clientEmail     String?
+  clientPhone     String?
+  clientCpf       String?
+  origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
+  importance      String       // frio, morno, quente
+  status          String       // novo, em_atendimento, convertido, perdido
+  storeId         String?
+  
+  subject            String?
+  firstInteractionAt DateTime?
+  externalId         String? @unique
 
-  cliente  Cliente    @relation(fields: [idCliente], references: [idCliente])
-  vendedor Vendedor   @relation(fields: [idVendedor], references: [idVendedor])
-  origem   OrigemLead @relation(fields: [idOrigem], references: [idOrigem])
-  carro    Carro      @relation(fields: [idCarro], references: [idCarro])
-  venda    Venda?
+  
+  negotiation     Negotiation?
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("leads")
 }
 
-model Venda {
-  idVenda        Int      @id @default(autoincrement())
-  idLead         Int      @unique
-  idVendedor     Int
-  idCarro        Int
-  valorVenda     Decimal  @db.Decimal(12, 2)
-  dataVenda      DateTime @default(now())
-  formaPagamento String
+model Negotiation {
+  id              String   @id @default(cuid())
+  leadId          String   @unique
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  stage           String   // prospecção, qualificação, proposta, fechamento, perdido
+  status          String   // aberta, encerrada
+  importance      String   // frio, morno, quente
+  reason          String?
+  notes           String?
+  
+  statusHistory   NegotiationHistory[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  lead     Lead     @relation(fields: [idLead], references: [idLead])
-  vendedor Vendedor @relation(fields: [idVendedor], references: [idVendedor])
-  carro    Carro    @relation(fields: [idCarro], references: [idCarro])
+  @@map("negotiations")
+}
+
+model NegotiationHistory {
+  id              String   @id @default(cuid())
+  negotiationId   String
+  negotiation     Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+  
+  previousStage   String?
+  newStage        String?
+  previousStatus  String?
+  newStatus       String?
+  reason          String?
+  
+  createdAt       DateTime @default(now())
+
+  @@map("negotiation_history")
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  entityType      String   // user, lead, team, negotiation
+  entityId        String
+  action          String   // create, update, delete, login
+  changes         Json?
+  
+  createdAt       DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([entityType, entityId])
 }

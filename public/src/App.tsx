@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import GaragePage from "./pages/GaragePage";
@@ -39,7 +40,6 @@ export default function App() {
             <Route path="/notificacoes" element={<NotificationsPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
             <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

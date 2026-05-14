@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useChat } from "./ChatContext";
+import { useChat } from "./chatState";
 
 export default function ChatMessages() {
   const { messages } = useChat();

@@ -47,7 +47,7 @@ export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, bo
     {} as Record<PermissionKey, boolean>,
   );
 
-  if (role === "ADMINISTRADOR") {
+  if (role === "ADMIN") {
     return allEnabled;
   }
 
@@ -75,10 +75,10 @@ export function defaultCollaborators(): Collaborator[] {
       nome: "Thiago Nunes",
       email: "thiago.nunes@gmail.com",
       telefone: "+55 11 91234-5678",
-      role: "ADMINISTRADOR",
+      role: "ADMIN",
       ativo: true,
       lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(),
-      permissoes: buildDefaultPermissoes("ADMINISTRADOR"),
+      permissoes: buildDefaultPermissoes("ADMIN"),
     },
     {
       id: "col-2",
@@ -95,10 +95,10 @@ export function defaultCollaborators(): Collaborator[] {
       nome: "Vinícius",
       email: "vinicius@gmail.com",
       telefone: "+55 11 93456-7890",
-      role: "USUARIO",
+      role: "ATENDENTE",
       ativo: true,
       lastLoginAt: null,
-      permissoes: buildDefaultPermissoes("USUARIO"),
+      permissoes: buildDefaultPermissoes("ATENDENTE"),
     },
     {
       id: "col-4",

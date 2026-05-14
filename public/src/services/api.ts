@@ -1,4 +1,6 @@
 import type { LoginResponse } from "../types/auth";
+import type { Collaborator } from "../components/Collaborators/types";
+import type { UserRole } from "../types/auth";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -63,5 +65,41 @@ export function getCurrentUser(token: string) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+}
+
+export function listCollaborators(token: string) {
+  return request<{ collaborators: Collaborator[] }>("/collaborators", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function createCollaborator(
+  token: string,
+  input: { nome: string; email: string; telefone: string; role: UserRole; senha: string },
+) {
+  return request<{ collaborator: Collaborator }>("/collaborators", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateCollaborator(
+  token: string,
+  id: string,
+  input: Partial<Pick<Collaborator, "nome" | "telefone" | "role" | "ativo" | "permissoes">>,
+) {
+  return request<{ collaborator: Collaborator }>(`/collaborators/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
   });
 }
