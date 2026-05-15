@@ -1,5 +1,7 @@
 /// <reference path="./types/express.d.ts" />
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import cors from "cors";
 import express from "express";
 
