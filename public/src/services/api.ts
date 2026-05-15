@@ -2,6 +2,27 @@ import type { LoginResponse } from "../types/auth";
 import type { Collaborator } from "../components/Collaborators/types";
 import type { UserRole } from "../types/auth";
 
+export interface ApiLead {
+  id: string;
+  clientName: string;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  subject: string | null;
+  origin: string;
+  importance: "frio" | "morno" | "quente";
+  status: string;
+  attendantId: string;
+  attendantName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssignableUser {
+  id: string;
+  nome: string;
+  role: string;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export class ApiError extends Error {
@@ -101,5 +122,52 @@ export function updateCollaborator(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(input),
+  });
+}
+
+export function listLeads(token: string) {
+  return request<{ leads: ApiLead[] }>("/leads", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function createLead(
+  token: string,
+  input: {
+    clientName: string;
+    clientPhone?: string | null;
+    clientEmail?: string | null;
+    subject?: string | null;
+    origin: string;
+    importance: "frio" | "morno" | "quente";
+    status: string;
+  },
+) {
+  return request<{ lead: ApiLead }>("/leads", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateLeadStatus(token: string, leadId: string, status: string) {
+  return request<{ lead: ApiLead }>(`/leads/${leadId}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function assignLead(token: string, leadId: string, attendantId: string) {
+  return request<{ lead: ApiLead }>(`/leads/${leadId}/assign`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ attendantId }),
+  });
+}
+
+export function listAssignable(token: string) {
+  return request<{ users: AssignableUser[] }>("/leads/assignable", {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

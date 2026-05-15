@@ -99,10 +99,12 @@ async function seedDatabase() {
     });
   }
 
-  const adminRole = roles.find((role) => role.name === Role.ADMIN);
+  const adminRole          = roles.find((role) => role.name === Role.ADMIN);
   const generalManagerRole = roles.find((role) => role.name === Role.GERENTE_GERAL);
+  const managerRole        = roles.find((role) => role.name === Role.GERENTE);
+  const attendantRole      = roles.find((role) => role.name === Role.ATENDENTE);
 
-  if (!adminRole || !generalManagerRole) {
+  if (!adminRole || !generalManagerRole || !managerRole || !attendantRole) {
     throw new Error("Roles obrigatorios nao foram criados.");
   }
 
@@ -125,6 +127,28 @@ async function seedDatabase() {
       email: "gerente.geral@sistema.com",
       password: await bcrypt.hash("GerenteGeral@2026", 10),
       roleId: generalManagerRole.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "gerente@sistema.com" },
+    update: { roleId: managerRole.id },
+    create: {
+      name: "Gerente Local",
+      email: "gerente@sistema.com",
+      password: await bcrypt.hash("Gerente@2026", 10),
+      roleId: managerRole.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "vendedor@sistema.com" },
+    update: { roleId: attendantRole.id },
+    create: {
+      name: "Vendedor",
+      email: "vendedor@sistema.com",
+      password: await bcrypt.hash("Vendedor@2026", 10),
+      roleId: attendantRole.id,
     },
   });
 }
