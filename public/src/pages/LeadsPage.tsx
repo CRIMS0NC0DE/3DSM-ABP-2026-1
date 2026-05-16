@@ -294,23 +294,34 @@ export default function LeadsPage() {
   const canDelegate = user?.role === "ADMIN" || user?.role === "GERENTE_GERAL" || user?.role === "GERENTE";
   const canCreate   = user?.role !== "GERENTE_GERAL";
 
+  const visibleLeads = useMemo(() => {
+    if (user?.role === "ATENDENTE") {
+      return leads.filter((l) => l.attendantId === user.id);
+    }
+    if (user?.role === "GERENTE") {
+      const teamIds = new Set(assignableUsers.map((u) => u.id));
+      return leads.filter((l) => teamIds.has(l.attendantId) || l.attendantId === user.id);
+    }
+    return leads;
+  }, [leads, assignableUsers, user?.role, user?.id]);
+
   const leadsByStage = useMemo(() => {
     const grouped = {} as Record<LeadStatus, ApiLead[]>;
     KANBAN_STAGES.forEach((stage) => (grouped[stage] = []));
-    leads.forEach((lead) => {
+    visibleLeads.forEach((lead) => {
       const stage = lead.status as LeadStatus;
       if (grouped[stage]) grouped[stage].push(lead);
       else grouped["Não atendido"].push(lead);
     });
     return grouped;
-  }, [leads]);
+  }, [visibleLeads]);
 
-  const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
+  const activeLead = activeId ? visibleLeads.find((l) => l.id === activeId) : null;
 
-  const totalLeads   = leads.length;
-  const newLeads     = leadsByStage["Não atendido"].length;
-  const inFunnelLeads = (leadsByStage["Em negociação"].length + leadsByStage["Agendado"].length + leadsByStage["Não lido"].length);
-  const closedLeads  = leadsByStage["Finalizado - vendido"].length;
+  const totalLeads    = visibleLeads.length;
+  const newLeads      = leadsByStage["Não atendido"].length;
+  const inFunnelLeads = leadsByStage["Em negociação"].length + leadsByStage["Agendado"].length + leadsByStage["Não lido"].length;
+  const closedLeads   = leadsByStage["Finalizado - vendido"].length;
 
   function handleDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string);

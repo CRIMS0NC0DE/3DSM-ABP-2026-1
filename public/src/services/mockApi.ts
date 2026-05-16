@@ -151,20 +151,26 @@ function getDynamicUsers(): DynamicUser[] {
 
 function saveDynamicUser(u: DynamicUser): void {
   const existing = getDynamicUsers().filter((x) => x.id !== u.id && x.email !== u.email);
-  localStorage.setItem(LS_PASSWORDS_KEY, JSON.stringify([...existing, u]));
+  const next = [...existing, u];
+  try {
+    localStorage.setItem(LS_PASSWORDS_KEY, JSON.stringify(next));
+  } catch (err) {
+    console.error("[mockApi] falha ao salvar credencial em mock_passwords_v1:", err);
+    throw new Error("Não foi possível salvar as credenciais no armazenamento local.");
+  }
 }
 
 function findUser(email: string, senha?: string): MockUser | null {
-  // Check hardcoded users first
+  const normalizedEmail = email.trim().toLowerCase();
+
   const staticMatch = MOCK_USERS.find(
-    (u) => u.email === email && (senha === undefined || u.senha === senha),
+    (u) => u.email === normalizedEmail && (senha === undefined || u.senha === senha),
   );
   if (staticMatch) return staticMatch;
 
-  // Then check dynamically created users
   const dynamic = getDynamicUsers();
   return dynamic.find(
-    (u) => u.email === email && (senha === undefined || u.senha === senha),
+    (u) => u.email === normalizedEmail && (senha === undefined || u.senha === senha),
   ) ?? null;
 }
 
@@ -199,7 +205,7 @@ function delay(ms = 120): Promise<void> {
 
 export async function login(email: string, senha: string): Promise<LoginResponse> {
   await delay();
-  const user = findUser(email, senha);
+  const user = findUser(email.trim().toLowerCase(), senha);
   if (!user) throw new Error("Credenciais inválidas.");
   return {
     token: makeToken(user.id),
@@ -210,9 +216,10 @@ export async function login(email: string, senha: string): Promise<LoginResponse
 
 export async function register(nome: string, email: string, senha: string): Promise<LoginResponse> {
   await delay();
-  if (findUser(email)) throw new Error("E-mail já cadastrado.");
+  const normalizedEmail = email.trim().toLowerCase();
+  if (findUser(normalizedEmail)) throw new Error("E-mail já cadastrado.");
   const id = `user-reg-${Date.now()}`;
-  const newUser: DynamicUser = { id, nome, email, senha, role: "ATENDENTE", teamId: null };
+  const newUser: DynamicUser = { id, nome, email: normalizedEmail, senha, role: "ATENDENTE", teamId: null };
   saveDynamicUser(newUser);
   // Also add to collaborators store
   const cols = getMockCollaborators();
@@ -308,7 +315,9 @@ export async function assignLead(
   const leads     = getLeads();
   const idx       = leads.findIndex((l) => l.id === leadId);
   if (idx === -1) throw new Error("Lead não encontrado.");
-  const attendant = MOCK_USERS.find((u) => u.id === attendantId);
+  const attendant =
+    getMockCollaborators().find((c) => c.id === attendantId) ??
+    MOCK_USERS.find((u) => u.id === attendantId);
   const lead = {
     ...leads[idx],
     attendantId,
@@ -320,12 +329,14 @@ export async function assignLead(
   return { lead };
 }
 
-export async function listAssignable(_token: string): Promise<{ users: AssignableUser[] }> {
+export async function listAssignable(token: string): Promise<{ users: AssignableUser[] }> {
   await delay(60);
-  const users: AssignableUser[] = MOCK_USERS
-    .filter((u) => u.role !== "ADMIN")
-    .map((u) => ({ id: u.id, nome: u.nome, role: u.role }));
-  return { users };
+  const requester = resolveToken(token);
+  const all = getMockCollaborators();
+  const filtered = requester?.role === "GERENTE"
+    ? all.filter((c) => c.role === "ATENDENTE" && c.ativo && c.teamId === requester.teamId)
+    : all.filter((c) => c.role !== "ADMIN" && c.ativo);
+  return { users: filtered.map((c) => ({ id: c.id, nome: c.nome, role: c.role })) };
 }
 
 /** Wipe localStorage so the seed data is reloaded on next call. */
