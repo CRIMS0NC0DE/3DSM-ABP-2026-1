@@ -113,7 +113,12 @@ export default function LoginPage() {
                 <Link to="/forgot-password" className="text-sky-600 hover:text-sky-700">
                   Esqueci minha senha
                 </Link>
-            
+                <p>
+                  Não tem conta?{" "}
+                  <Link to="/register" className="font-semibold text-slate-900 hover:text-slate-700">
+                    Cadastre-se
+                  </Link>
+                </p>
               </div>
             </div>
           </div>
