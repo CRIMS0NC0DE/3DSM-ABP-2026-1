@@ -225,25 +225,42 @@ export default function Sidebar() {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
 
+  const role = user?.role ?? "ATENDENTE";
+
+  const leadsLabel = role === "ATENDENTE" ? "Meus Leads" : "Leads";
+  const colabLabel =
+    role === "GERENTE"       ? "Minha Equipe"  :
+    role === "GERENTE_GERAL" ? "Gestão de Equipes" :
+    "Colaboradores";
+  const configLabel =
+    role === "ATENDENTE"     ? "Meu Perfil"    :
+    role === "GERENTE"       ? "Config. Unidade" :
+    "Configurações";
+  const reportLabel =
+    role === "ATENDENTE"     ? "Meu Relatório" :
+    role === "GERENTE"       ? "Rel. Regional"  :
+    role === "GERENTE_GERAL" ? "Rel. Consolidado" :
+    "Rel. Transações";
+
   const allItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Dashboard",     to: "/dashboard",    icon: <DashboardIcon />, permissionKey: "dashboard" },
-      { label: "Garagem",       to: "/garagem",      icon: <CarIcon />,       permissionKey: "garagem" },
-      { label: "Leads",         to: "/leads",        icon: <LeadsIcon />,     permissionKey: "leads" },
-      { label: "Chat",          to: "/chat",         icon: <ChatIcon /> },
-      { label: "Notificações",  to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
-      { label: "Colaboradores", to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
-      { label: "Configurações", to: "/configuracoes",icon: <SettingsIcon />,  permissionKey: "configuracoes" },
+      { label: "Dashboard",   to: "/dashboard",    icon: <DashboardIcon />, permissionKey: "dashboard" },
+      { label: "Garagem",     to: "/garagem",      icon: <CarIcon />,       permissionKey: "garagem" },
+      { label: leadsLabel,    to: "/leads",        icon: <LeadsIcon />,     permissionKey: "leads" },
+      { label: "Chat",        to: "/chat",         icon: <ChatIcon /> },
+      { label: "Notificações",to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
+      { label: colabLabel,    to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
+      { label: configLabel,   to: "/configuracoes",icon: <SettingsIcon />,  permissionKey: "configuracoes" },
     ],
-    [],
+    [leadsLabel, colabLabel, configLabel],
   );
 
   const allReportItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Det. Pagamento",  to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
-      { label: "Rel. Transações", to: "/relatorio-transacoes", icon: <TransactionsIcon />,   permissionKey: "relatorio" },
+      { label: "Det. Pagamento", to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
+      { label: reportLabel,      to: "/relatorio-transacoes", icon: <TransactionsIcon />,   permissionKey: "relatorio" },
     ],
-    [],
+    [reportLabel],
   );
 
   const items = allItems.filter((item) => !item.permissionKey || can(item.permissionKey));

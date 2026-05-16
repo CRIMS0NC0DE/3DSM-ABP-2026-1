@@ -89,17 +89,27 @@ export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, bo
 
   if (role === "ADMIN") return allEnabled;
 
-  if (role === "GERENTE_GERAL" || role === "GERENTE") {
-    return { ...allEnabled, configuracoes: false, colaboradores: false };
+  // Base restrita: itens que nenhum perfil abaixo de ADMIN usa
+  const restricted: Partial<Record<PermissionKey, boolean>> = {
+    garagem:            false,
+    notificacoes:       false,
+    detalhes_pagamento: false,
+    transacoes:         false,
+    pontos:             false,
+  };
+
+  if (role === "GERENTE_GERAL") {
+    // Dashboard, Leads, Colaboradores, Relatório, Chat, Configurações
+    return { ...allEnabled, ...restricted };
   }
 
-  return {
-    ...allEnabled,
-    configuracoes: false,
-    colaboradores: false,
-    detalhes_pagamento: false,
-    transacoes: false,
-  };
+  if (role === "GERENTE") {
+    // Igual ao GG — Colaboradores mostra apenas a equipe deste gerente
+    return { ...allEnabled, ...restricted };
+  }
+
+  // ATENDENTE: sem Colaboradores (acesso restrito já tratado na página)
+  return { ...allEnabled, ...restricted, colaboradores: false };
 }
 
 export function defaultCollaborators(): Collaborator[] {
