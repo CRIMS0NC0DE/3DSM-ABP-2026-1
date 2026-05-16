@@ -14,6 +14,7 @@ import {
 import Navbar from "../components/Layouts/Navbar";
 import LeadCard from "../components/Lead/LeadCard";
 import LeadForm from "../components/Lead/LeadForm";
+import DelegationManager from "../components/Lead/DelegationManager";
 import type { LeadFormData } from "../components/Lead/LeadForm";
 import { useAuth } from "../contexts/useAuth";
 import { useLeads } from "../hooks/useLeads";
@@ -41,13 +42,6 @@ const KANBAN_STAGES: LeadStatus[] = [
   "Agendado",
   "Finalizado - vendido",
 ];
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN:         "Admin",
-  GERENTE_GERAL: "Ger. Geral",
-  GERENTE:       "Gerente",
-  ATENDENTE:     "Vendedor",
-};
 
 // ── Draggable card wrapper ──────────────────────────────────────────────────
 function DraggableCard({
@@ -220,22 +214,24 @@ function Row({ label, value }: { label: string; value: string }) {
 function DelegateModal({
   lead,
   assignableUsers,
+  currentUserRole,
   onClose,
   onDelegate,
 }: {
   lead: ApiLead;
   assignableUsers: AssignableUser[];
+  currentUserRole: string;
   onClose: () => void;
   onDelegate: (attendantId: string) => Promise<void>;
 }) {
-  const [selected, setSelected] = useState("");
-  const [saving, setSaving]     = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AssignableUser | null>(null);
+  const [saving, setSaving]             = useState(false);
 
   async function handleConfirm() {
-    if (!selected) return;
+    if (!selectedUser) return;
     setSaving(true);
     try {
-      await onDelegate(selected);
+      await onDelegate(selectedUser.id);
       onClose();
     } finally {
       setSaving(false);
@@ -253,35 +249,12 @@ function DelegateModal({
           <button onClick={onClose} className="text-slate-400 transition hover:text-slate-700">✕</button>
         </div>
 
-        {assignableUsers.length === 0 ? (
-          <p className="text-sm text-slate-500">Nenhum usuário disponível para delegação.</p>
-        ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {assignableUsers.map((u) => (
-              <label
-                key={u.id}
-                className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition ${
-                  selected === u.id
-                    ? "border-violet-400 bg-violet-50"
-                    : "border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="assignee"
-                  value={u.id}
-                  checked={selected === u.id}
-                  onChange={() => setSelected(u.id)}
-                  className="accent-violet-600"
-                />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{u.nome}</p>
-                  <p className="text-[11px] text-slate-400">{ROLE_LABELS[u.role] ?? u.role}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        )}
+        <DelegationManager
+          currentUserRole={currentUserRole}
+          assignableUsers={assignableUsers}
+          selectedUserId={selectedUser?.id}
+          onSelect={setSelectedUser}
+        />
 
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -292,7 +265,7 @@ function DelegateModal({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selected || saving}
+            disabled={!selectedUser || saving}
             className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
           >
             {saving ? "Delegando..." : "Confirmar"}
@@ -460,6 +433,7 @@ export default function LeadsPage() {
         <DelegateModal
           lead={delegatingLead}
           assignableUsers={assignableUsers}
+          currentUserRole={user?.role ?? ""}
           onClose={() => setDelegatingLead(null)}
           onDelegate={handleDelegate}
         />

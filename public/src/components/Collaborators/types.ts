@@ -18,6 +18,8 @@ export type Collaborator = {
   email: string;
   telefone: string;
   role: UserRole;
+  teamId: string | null;
+  teamName: string | null;
   ativo: boolean;
   lastLoginAt: string | null;
   permissoes: Record<PermissionKey, boolean>;
@@ -25,38 +27,70 @@ export type Collaborator = {
 
 export const COLLABORATORS_STORAGE_KEY = "crm-collaborators-v1";
 
+export const TEAMS: Array<{ id: string; name: string }> = [
+  { id: "team-pa",       name: "Equipe PA" },
+  { id: "team-cacapava", name: "Equipe Caçapava" },
+  { id: "team-sjc",      name: "Equipe SJC" },
+];
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN:         "Administrador",
+  GERENTE_GERAL: "Gerente Geral",
+  GERENTE:       "Gerente",
+  ATENDENTE:     "Vendedor",
+};
+
+/** Roles that each actor is allowed to assign/create */
+export const ASSIGNABLE_ROLES: Record<UserRole, UserRole[]> = {
+  ADMIN:         ["ADMIN", "GERENTE_GERAL", "GERENTE", "ATENDENTE"],
+  GERENTE_GERAL: ["GERENTE", "ATENDENTE"],
+  GERENTE:       ["ATENDENTE"],
+  ATENDENTE:     [],
+};
+
+export function getVisibleRoles(viewerRole: UserRole): UserRole[] {
+  if (viewerRole === "ADMIN")         return ["ADMIN", "GERENTE_GERAL", "GERENTE", "ATENDENTE"];
+  if (viewerRole === "GERENTE_GERAL") return ["GERENTE", "ATENDENTE"];
+  if (viewerRole === "GERENTE")       return ["ATENDENTE"];
+  return [];
+}
+
+export function filterCollaboratorsForViewer(
+  all: Collaborator[],
+  viewerRole: UserRole,
+  viewerTeamId: string | null,
+): Collaborator[] {
+  const visibleRoles = getVisibleRoles(viewerRole);
+  return all.filter((c) => {
+    if (!visibleRoles.includes(c.role)) return false;
+    if (viewerRole === "GERENTE") return c.teamId === viewerTeamId;
+    return true;
+  });
+}
+
 export const MODULES: Array<{ key: PermissionKey; label: string }> = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "colaboradores", label: "Colaboradores" },
-  { key: "leads", label: "Leads" },
-  { key: "garagem", label: "Garagem" },
-  { key: "notificacoes", label: "Notificações" },
-  { key: "relatorio", label: "Relatório de vendas" },
-  { key: "transacoes", label: "Transações" },
+  { key: "dashboard",          label: "Dashboard" },
+  { key: "colaboradores",      label: "Colaboradores" },
+  { key: "leads",              label: "Leads" },
+  { key: "garagem",            label: "Garagem" },
+  { key: "notificacoes",       label: "Notificações" },
+  { key: "relatorio",          label: "Relatório de vendas" },
+  { key: "transacoes",         label: "Transações" },
   { key: "detalhes_pagamento", label: "Detalhes pagamento" },
-  { key: "pontos", label: "Pontos" },
-  { key: "configuracoes", label: "Configurações" },
+  { key: "pontos",             label: "Pontos" },
+  { key: "configuracoes",      label: "Configurações" },
 ];
 
 export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, boolean> {
   const allEnabled = MODULES.reduce(
-    (acc, module) => {
-      acc[module.key] = true;
-      return acc;
-    },
+    (acc, m) => { acc[m.key] = true; return acc; },
     {} as Record<PermissionKey, boolean>,
   );
 
-  if (role === "ADMIN") {
-    return allEnabled;
-  }
+  if (role === "ADMIN") return allEnabled;
 
   if (role === "GERENTE_GERAL" || role === "GERENTE") {
-    return {
-      ...allEnabled,
-      configuracoes: false,
-      colaboradores: false,
-    };
+    return { ...allEnabled, configuracoes: false, colaboradores: false };
   }
 
   return {
@@ -76,6 +110,8 @@ export function defaultCollaborators(): Collaborator[] {
       email: "thiago.nunes@gmail.com",
       telefone: "+55 11 91234-5678",
       role: "ADMIN",
+      teamId: null,
+      teamName: null,
       ativo: true,
       lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(),
       permissoes: buildDefaultPermissoes("ADMIN"),
@@ -86,6 +122,8 @@ export function defaultCollaborators(): Collaborator[] {
       email: "marcio.bueno@gmail.com",
       telefone: "+55 11 92345-6789",
       role: "GERENTE",
+      teamId: "team-pa",
+      teamName: "Equipe PA",
       ativo: true,
       lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
       permissoes: buildDefaultPermissoes("GERENTE"),
@@ -96,6 +134,8 @@ export function defaultCollaborators(): Collaborator[] {
       email: "vinicius@gmail.com",
       telefone: "+55 11 93456-7890",
       role: "ATENDENTE",
+      teamId: "team-pa",
+      teamName: "Equipe PA",
       ativo: true,
       lastLoginAt: null,
       permissoes: buildDefaultPermissoes("ATENDENTE"),
@@ -106,6 +146,8 @@ export function defaultCollaborators(): Collaborator[] {
       email: "davi.almeida@hotmail.com",
       telefone: "+55 11 94567-8901",
       role: "ATENDENTE",
+      teamId: "team-pa",
+      teamName: "Equipe PA",
       ativo: false,
       lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
       permissoes: buildDefaultPermissoes("ATENDENTE"),
@@ -127,33 +169,24 @@ export function formatRelativeTime(isoString: string | null) {
   const parsed = new Date(isoString);
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  const diffMs = parsed.getTime() - Date.now();
+  const diffMs      = parsed.getTime() - Date.now();
   const diffMinutes = Math.round(diffMs / (1000 * 60));
-  const absMinutes = Math.abs(diffMinutes);
+  const absMinutes  = Math.abs(diffMinutes);
 
   const rtf = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
 
-  if (absMinutes < 60) {
-    return rtf.format(diffMinutes, "minute");
-  }
+  if (absMinutes < 60) return rtf.format(diffMinutes, "minute");
 
   const diffHours = Math.round(diffMinutes / 60);
-  if (Math.abs(diffHours) < 24) {
-    return rtf.format(diffHours, "hour");
-  }
+  if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");
 
   const diffDays = Math.round(diffHours / 24);
-  if (Math.abs(diffDays) < 30) {
-    return rtf.format(diffDays, "day");
-  }
+  if (Math.abs(diffDays) < 30) return rtf.format(diffDays, "day");
 
   const diffMonths = Math.round(diffDays / 30);
-  if (Math.abs(diffMonths) < 12) {
-    return rtf.format(diffMonths, "month");
-  }
+  if (Math.abs(diffMonths) < 12) return rtf.format(diffMonths, "month");
 
-  const diffYears = Math.round(diffMonths / 12);
-  return rtf.format(diffYears, "year");
+  return rtf.format(Math.round(diffMonths / 12), "year");
 }
 
 export function safeReadStoredCollaborators(): Collaborator[] {
@@ -163,10 +196,14 @@ export function safeReadStoredCollaborators(): Collaborator[] {
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return defaultCollaborators();
-    return parsed as Collaborator[];
+    // Migrate old records that lack teamId/teamName
+    return (parsed as Collaborator[]).map((c) => ({
+      teamId: null,
+      teamName: null,
+      ...c,
+    }));
   } catch {
     localStorage.removeItem(COLLABORATORS_STORAGE_KEY);
     return defaultCollaborators();
   }
 }
-

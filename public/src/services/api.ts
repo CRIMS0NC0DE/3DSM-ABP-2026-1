@@ -1,6 +1,9 @@
 import type { LoginResponse } from "../types/auth";
 import type { Collaborator } from "../components/Collaborators/types";
 import type { UserRole } from "../types/auth";
+import * as mockApi from "./mockApi";
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
 export interface ApiLead {
   id: string;
@@ -67,6 +70,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function login(email: string, senha: string) {
+  if (USE_MOCK) return mockApi.login(email, senha);
   return request<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, senha }),
@@ -74,6 +78,7 @@ export function login(email: string, senha: string) {
 }
 
 export function register(nome: string, email: string, senha: string) {
+  if (USE_MOCK) return mockApi.register(nome, email, senha);
   return request<LoginResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify({ nome, email, senha }),
@@ -81,6 +86,7 @@ export function register(nome: string, email: string, senha: string) {
 }
 
 export function getCurrentUser(token: string) {
+  if (USE_MOCK) return mockApi.getCurrentUser(token);
   return request<{ user: LoginResponse["user"] }>("/auth/me", {
     method: "GET",
     headers: {
@@ -90,6 +96,7 @@ export function getCurrentUser(token: string) {
 }
 
 export function listCollaborators(token: string) {
+  if (USE_MOCK) return mockApi.listCollaborators(token);
   return request<{ collaborators: Collaborator[] }>("/collaborators", {
     method: "GET",
     headers: {
@@ -100,8 +107,9 @@ export function listCollaborators(token: string) {
 
 export function createCollaborator(
   token: string,
-  input: { nome: string; email: string; telefone: string; role: UserRole; senha: string },
+  input: { nome: string; email: string; telefone: string; role: UserRole; senha: string; teamId?: string | null },
 ) {
+  if (USE_MOCK) return mockApi.createCollaborator(token, input);
   return request<{ collaborator: Collaborator }>("/collaborators", {
     method: "POST",
     headers: {
@@ -114,8 +122,9 @@ export function createCollaborator(
 export function updateCollaborator(
   token: string,
   id: string,
-  input: Partial<Pick<Collaborator, "nome" | "telefone" | "role" | "ativo" | "permissoes">>,
+  input: Partial<Pick<Collaborator, "nome" | "telefone" | "role" | "ativo" | "permissoes" | "teamId" | "teamName">>,
 ) {
+  if (USE_MOCK) return mockApi.updateCollaborator(token, id, input);
   return request<{ collaborator: Collaborator }>(`/collaborators/${id}`, {
     method: "PATCH",
     headers: {
@@ -126,6 +135,7 @@ export function updateCollaborator(
 }
 
 export function listLeads(token: string) {
+  if (USE_MOCK) return mockApi.listLeads(token);
   return request<{ leads: ApiLead[] }>("/leads", {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -143,6 +153,7 @@ export function createLead(
     status: string;
   },
 ) {
+  if (USE_MOCK) return mockApi.createLead(token, input);
   return request<{ lead: ApiLead }>("/leads", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
@@ -151,6 +162,7 @@ export function createLead(
 }
 
 export function updateLeadStatus(token: string, leadId: string, status: string) {
+  if (USE_MOCK) return mockApi.updateLeadStatus(token, leadId, status);
   return request<{ lead: ApiLead }>(`/leads/${leadId}/status`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
@@ -159,6 +171,7 @@ export function updateLeadStatus(token: string, leadId: string, status: string) 
 }
 
 export function assignLead(token: string, leadId: string, attendantId: string) {
+  if (USE_MOCK) return mockApi.assignLead(token, leadId, attendantId);
   return request<{ lead: ApiLead }>(`/leads/${leadId}/assign`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
@@ -167,6 +180,7 @@ export function assignLead(token: string, leadId: string, attendantId: string) {
 }
 
 export function listAssignable(token: string) {
+  if (USE_MOCK) return mockApi.listAssignable(token);
   return request<{ users: AssignableUser[] }>("/leads/assignable", {
     headers: { Authorization: `Bearer ${token}` },
   });
