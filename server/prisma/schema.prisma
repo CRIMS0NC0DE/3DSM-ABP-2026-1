@@ -57,6 +57,7 @@ model User {
   // Relacionamentos com negócio
   leads              Lead[]        @relation("AttendantLeads")
   negotiations       Negotiation[]
+  negotiationHistoryEntries NegotiationHistory[]
   auditLogs          AuditLog[]
 
   @@map("users")
@@ -76,6 +77,8 @@ model Lead {
   importance      String       // frio, morno, quente
   status          String       // novo, em_atendimento, convertido, perdido
   storeId         String?
+
+  isArchived         Boolean      @default(false)
   
   subject            String?
   firstInteractionAt DateTime?
@@ -121,6 +124,10 @@ model NegotiationHistory {
   previousStatus  String?
   newStatus       String?
   reason          String?
+  
+  // ID do usuário que modificou
+  userId          String? 
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   createdAt       DateTime @default(now())
 

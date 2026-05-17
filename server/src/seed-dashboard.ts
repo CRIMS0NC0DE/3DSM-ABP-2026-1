@@ -104,6 +104,7 @@ async function importData() {
       
       const lead = await prisma.lead.upsert({
         where: { externalId: leadIdStr },
+        omit: { isArchived: true },
         update: {
           clientName: row.customer_name,
           clientEmail: row.customer_email || null,

@@ -9,7 +9,7 @@ export function errorHandler(
   response: Response,
   _next: NextFunction,
 ) {
-  if (error instanceof ZodError) {
+  if (error instanceof ZodError || error.name === "ZodError") {
     response.status(400).json({
       message: "Dados invalidos.",
       issues: error.flatten().fieldErrors,
@@ -17,8 +17,9 @@ export function errorHandler(
     return;
   }
 
-  if (error instanceof AppError) {
-    response.status(error.statusCode).json({
+  if (error instanceof AppError || error.name === "AppError") {
+    const statusCode = error instanceof AppError ? error.statusCode : (error as any).statusCode || 400;
+    response.status(statusCode).json({
       message: error.message,
     });
     return;

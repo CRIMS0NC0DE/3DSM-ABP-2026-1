@@ -47,10 +47,14 @@ CREATE TABLE "leads" (
     "clientName" TEXT NOT NULL,
     "clientEmail" TEXT,
     "clientPhone" TEXT,
+    "clientCpf" TEXT,
     "origin" TEXT NOT NULL,
     "importance" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "storeId" TEXT,
+    "subject" TEXT,
+    "firstInteractionAt" TIMESTAMP(3),
+    "externalId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -65,6 +69,7 @@ CREATE TABLE "negotiations" (
     "stage" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "importance" TEXT NOT NULL,
+    "reason" TEXT,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -102,7 +107,9 @@ CREATE TABLE "audit_logs" (
 -- CreateTable
 CREATE TABLE "_PermissionToRole" (
     "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_PermissionToRole_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -112,7 +119,13 @@ CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 CREATE UNIQUE INDEX "permissions_name_key" ON "permissions"("name");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "teams_name_key" ON "teams"("name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "leads_externalId_key" ON "leads"("externalId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "negotiations_leadId_key" ON "negotiations"("leadId");
@@ -122,9 +135,6 @@ CREATE INDEX "audit_logs_userId_idx" ON "audit_logs"("userId");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_entityType_entityId_idx" ON "audit_logs"("entityType", "entityId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_PermissionToRole_AB_unique" ON "_PermissionToRole"("A", "B");
 
 -- CreateIndex
 CREATE INDEX "_PermissionToRole_B_index" ON "_PermissionToRole"("B");

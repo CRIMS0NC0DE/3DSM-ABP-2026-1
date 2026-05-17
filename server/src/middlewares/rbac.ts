@@ -1,17 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../errors/AppError";
 
-// Estender interface Express Request para incluir dados do usuário
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-      userRole?: string;
-      userTeamId?: string | null;
-    }
-  }
-}
-
 /**
  * Middleware para validar se o usuário tem um dos roles necessários
  * @param allowedRoles - Array de roles permitidos
