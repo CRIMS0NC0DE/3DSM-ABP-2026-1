@@ -71,12 +71,12 @@ function mapCsvStatus(csvStatus: string, csvStage: string): string {
     case "Em negociação":
       return csvStage === "Aguardando pagamento" ? "Agendado" : "Em negociação";
     case "Finalizado com venda":
-      return "Finalizado - vendido";
+      return "Vendido";
     case "Finalizado sem venda":
-      return "Não atendido";
+      return "Perdido";
     case "Aberto":
     default:
-      return csvStage === "Contato inicial" ? "Não lido" : "Não atendido";
+      return csvStage === "Contato inicial" ? "Em atendimento" : "Novo";
   }
 }
 

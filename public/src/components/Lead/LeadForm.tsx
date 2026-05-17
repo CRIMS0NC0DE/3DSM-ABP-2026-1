@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 
 const STAGES = [
-  "Não atendido",
-  "Em negociação",
-  "Não lido",
+  "Novo",
+  "Em atendimento",
   "Agendado",
-  "Finalizado - vendido",
+  "Em negociação",
+  "Vendido",
+  "Perdido",
 ] as const;
 
 const ORIGINS = [
@@ -45,7 +46,7 @@ export default function LeadForm({ onclose, onSave }: LeadFormProps) {
   const [subject, setSubject]         = useState("");
   const [origin, setOrigin]           = useState("visita_loja");
   const [importance, setImportance]   = useState<"frio" | "morno" | "quente">("morno");
-  const [status, setStatus]           = useState<string>("Não atendido");
+  const [status, setStatus]           = useState<string>("Novo");
   const [saving, setSaving]           = useState(false);
 
   async function handleSubmit(event: React.SyntheticEvent) {

@@ -24,6 +24,7 @@ export interface MetricSummary {
   value: string;
   trend: 'up' | 'down' | 'neutral' | 'stable';
   trendValue: string;
+  /** Nome semântico mapeado em DynamicIcon (ex: "money", "leads", "fire") */
   icon: string;
 }
 

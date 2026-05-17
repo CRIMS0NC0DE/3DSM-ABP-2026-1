@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import MetricCard from '../Dashboard/MetricCard'; // Importando o seu componente base
 
 // Tipagem para os filtros de período

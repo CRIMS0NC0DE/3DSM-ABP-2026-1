@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import NewCollaboratorModal from "../components/Collaborators/NewCollaboratorModal";
 import RolePill from "../components/Collaborators/RolePill";
@@ -9,7 +9,6 @@ import {
   COLLABORATORS_STORAGE_KEY,
   filterCollaboratorsForViewer,
   formatRelativeTime,
-  MODULES,
   normalizeText,
   ROLE_LABELS,
   safeReadStoredCollaborators,
@@ -113,7 +112,6 @@ export default function CollaboratorsPage() {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft]           = useState<Collaborator | null>(null);
-  const [activeTab, setActiveTab]   = useState<"info" | "permissoes">("permissoes");
 
   const [query, setQuery]           = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "TODOS">("TODOS");
@@ -208,7 +206,6 @@ export default function CollaboratorsPage() {
   function selectRow(c: Collaborator) {
     setSelectedId(c.id);
     setDraft(createDraft(c));
-    setActiveTab("permissoes");
     setSuccessMsg(null);
   }
 
@@ -283,10 +280,8 @@ export default function CollaboratorsPage() {
           </div>
         </section>
 
-        {/* ── Two-panel layout ────────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-
-          {/* ── Table panel ─────────────────────────────────────────────── */}
+        {/* ── Table ───────────────────────────────────────────────────────── */}
+        <section>
           <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-sm backdrop-blur">
             {/* Filters */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -456,148 +451,97 @@ export default function CollaboratorsPage() {
               </div>
             </div>
           </div>
-
-          {/* ── Detail panel ─────────────────────────────────────────────── */}
-          <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-sm backdrop-blur">
-            {!draft ? (
-              <div className="flex h-full min-h-[22rem] flex-col items-center justify-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
-                  <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Detalhes</p>
-                <p className="text-sm text-slate-500">Clique em um colaborador para ver detalhes e editar permissões.</p>
-              </div>
-            ) : (
-              <div className="flex h-full flex-col">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white">
-                      {draft.nome.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-900">{draft.nome}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <RolePill role={draft.role} />
-                        {draft.teamName && (
-                          <span className="text-xs text-slate-400">{draft.teamName}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedId(null); setDraft(null); }}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                    aria-label="Fechar"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="mt-5 flex items-center gap-2 rounded-2xl bg-slate-50 p-1.5">
-                  {(["info", "permissoes"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab)}
-                      className={cx(
-                        "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
-                        activeTab === tab
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-500 hover:bg-white/60",
-                      )}
-                    >
-                      {tab === "info" ? "Informações" : "Permissões"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 flex-1">
-                  {activeTab === "info" ? (
-                    <div className="grid gap-4">
-                      <InfoCard title="Contato">
-                        <InfoRow label="E-mail"   value={draft.email} />
-                        <InfoRow label="Telefone" value={draft.telefone || "—"} />
-                        <InfoRow label="Unidade"  value={draft.teamName ?? "—"} />
-                        <InfoRow label="Último login" value={formatRelativeTime(draft.lastLoginAt)} />
-                      </InfoCard>
-
-                      <InfoCard title="Perfil">
-                        <label className="grid gap-1.5">
-                          <span className="text-xs font-semibold text-slate-500">Função</span>
-                          <select
-                            value={draft.role}
-                            onChange={(e) => {
-                              const r = e.target.value as UserRole;
-                              setDraft((d) => d ? { ...d, role: r, permissoes: buildDefaultPermissoes(r) } : d);
-                            }}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                          >
-                            {(ASSIGNABLE_ROLES[viewerRole] ?? []).map((r) => (
-                              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                            ))}
-                          </select>
-                        </label>
-                      </InfoCard>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Permissões de Acesso</p>
-                      <p className="mt-1 text-xs text-slate-500">Ative ou desative o acesso às áreas do sistema.</p>
-                      <div className="mt-4 grid gap-2.5">
-                        {MODULES.map((mod) => (
-                          <div
-                            key={mod.key}
-                            className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-3 py-2.5"
-                          >
-                            <span className="text-sm font-semibold text-slate-800">{mod.label}</span>
-                            <Switch
-                              checked={Boolean(draft.permissoes[mod.key])}
-                              label={`Permissão para ${mod.label}`}
-                              onChange={(next) =>
-                                setDraft((d) =>
-                                  d ? { ...d, permissoes: { ...d.permissoes, [mod.key]: next } } : d,
-                                )
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="mt-5 flex gap-3 border-t border-slate-100 pt-5">
-                  <button
-                    type="button"
-                    onClick={() => { if (selected) setDraft(createDraft(selected)); }}
-                    className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!draft || saving === draft.id}
-                    onClick={() => {
-                      if (!draft) return;
-                      void persistCollaborator(draft);
-                      setSuccessMsg(`${draft.nome} atualizado com sucesso.`);
-                    }}
-                    className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {saving === draft?.id ? "Salvando..." : "Salvar"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </section>
       </main>
+
+      {/* ── Detail modal ──────────────────────────────────────────────────── */}
+      {draft && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => { setSelectedId(null); setDraft(null); }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white">
+                  {draft.nome.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("")}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-slate-900">{draft.nome}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <RolePill role={draft.role} />
+                    {draft.teamName && (
+                      <span className="text-xs text-slate-400">{draft.teamName}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSelectedId(null); setDraft(null); }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="mt-5 grid gap-4">
+              <InfoCard title="Contato">
+                <InfoRow label="E-mail"       value={draft.email} />
+                <InfoRow label="Telefone"     value={draft.telefone || "—"} />
+                <InfoRow label="Unidade"      value={draft.teamName ?? "—"} />
+                <InfoRow label="Último login" value={formatRelativeTime(draft.lastLoginAt)} />
+              </InfoCard>
+
+              <InfoCard title="Perfil">
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold text-slate-500">Função</span>
+                  <select
+                    value={draft.role}
+                    onChange={(e) => {
+                      const r = e.target.value as UserRole;
+                      setDraft((d) => d ? { ...d, role: r, permissoes: buildDefaultPermissoes(r) } : d);
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  >
+                    {(ASSIGNABLE_ROLES[viewerRole] ?? []).map((r) => (
+                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                    ))}
+                  </select>
+                </label>
+              </InfoCard>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-5 flex gap-3 border-t border-slate-100 pt-5">
+              <button
+                type="button"
+                onClick={() => { if (selected) setDraft(createDraft(selected)); }}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={saving === draft.id}
+                onClick={() => {
+                  void persistCollaborator(draft);
+                  setSuccessMsg(`${draft.nome} atualizado com sucesso.`);
+                }}
+                className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving === draft.id ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <NewCollaboratorModal
         key={String(isNewOpen)}
@@ -619,7 +563,6 @@ export default function CollaboratorsPage() {
           setAllCollaborators((prev) => [newCol, ...prev]);
           setSelectedId(newCol.id);
           setDraft(createDraft(newCol));
-          setActiveTab("permissoes");
           setQuery("");
           setRoleFilter("TODOS");
           setPage(1);
@@ -632,7 +575,7 @@ export default function CollaboratorsPage() {
 }
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{title}</p>

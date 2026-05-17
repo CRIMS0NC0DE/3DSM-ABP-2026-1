@@ -21,26 +21,29 @@ import { useLeads } from "../hooks/useLeads";
 import type { ApiLead, AssignableUser } from "../hooks/useLeads";
 
 export type LeadStatus =
-  | "Não atendido"
-  | "Em negociação"
-  | "Não lido"
+  | "Novo"
+  | "Em atendimento"
   | "Agendado"
-  | "Finalizado - vendido";
+  | "Em negociação"
+  | "Vendido"
+  | "Perdido";
 
 const STAGE_META: Record<LeadStatus, { color: string; bg: string }> = {
-  "Não atendido":          { color: "#ef4444", bg: "#fef2f2" },
-  "Em negociação":         { color: "#f97316", bg: "#fff7ed" },
-  "Não lido":              { color: "#8b5cf6", bg: "#f5f3ff" },
-  "Agendado":              { color: "#f59e0b", bg: "#fffbeb" },
-  "Finalizado - vendido":  { color: "#10b981", bg: "#f0fdf4" },
+  "Novo":           { color: "#ef4444", bg: "#fef2f2" },
+  "Em atendimento": { color: "#3b82f6", bg: "#eff6ff" },
+  "Agendado":       { color: "#f59e0b", bg: "#fffbeb" },
+  "Em negociação":  { color: "#f97316", bg: "#fff7ed" },
+  "Vendido":        { color: "#10b981", bg: "#f0fdf4" },
+  "Perdido":        { color: "#94a3b8", bg: "#f8fafc" },
 };
 
 const KANBAN_STAGES: LeadStatus[] = [
-  "Não atendido",
-  "Em negociação",
-  "Não lido",
+  "Novo",
+  "Em atendimento",
   "Agendado",
-  "Finalizado - vendido",
+  "Em negociação",
+  "Vendido",
+  "Perdido",
 ];
 
 // ── Draggable card wrapper ──────────────────────────────────────────────────
@@ -311,7 +314,7 @@ export default function LeadsPage() {
     visibleLeads.forEach((lead) => {
       const stage = lead.status as LeadStatus;
       if (grouped[stage]) grouped[stage].push(lead);
-      else grouped["Não atendido"].push(lead);
+      else grouped["Novo"].push(lead);
     });
     return grouped;
   }, [visibleLeads]);
@@ -319,9 +322,9 @@ export default function LeadsPage() {
   const activeLead = activeId ? visibleLeads.find((l) => l.id === activeId) : null;
 
   const totalLeads    = visibleLeads.length;
-  const newLeads      = leadsByStage["Não atendido"].length;
-  const inFunnelLeads = leadsByStage["Em negociação"].length + leadsByStage["Agendado"].length + leadsByStage["Não lido"].length;
-  const closedLeads   = leadsByStage["Finalizado - vendido"].length;
+  const newLeads      = leadsByStage["Novo"].length;
+  const inFunnelLeads = leadsByStage["Em atendimento"].length + leadsByStage["Agendado"].length + leadsByStage["Em negociação"].length;
+  const closedLeads   = leadsByStage["Vendido"].length;
 
   function handleDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string);
