@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -14,7 +14,11 @@ import {
 import Navbar from "../components/Layouts/Navbar";
 import LeadCard from "../components/Lead/LeadCard";
 import LeadForm from "../components/Lead/LeadForm";
+import DelegationManager from "../components/Lead/DelegationManager";
+import type { LeadFormData } from "../components/Lead/LeadForm";
 import { useAuth } from "../contexts/useAuth";
+import { useLeads } from "../hooks/useLeads";
+import type { ApiLead, AssignableUser } from "../hooks/useLeads";
 
 export type LeadStatus =
   | "Não atendido"
@@ -23,27 +27,12 @@ export type LeadStatus =
   | "Agendado"
   | "Finalizado - vendido";
 
-interface Lead {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  interest: string;
-  status: LeadStatus;
-  company?: string;
-  value?: string;
-  tags?: string[];
-  origin?: string;
-  createdAt: string;
-  responsible?: string;
-}
-
 const STAGE_META: Record<LeadStatus, { color: string; bg: string }> = {
-  "Não atendido":       { color: "#ef4444", bg: "#fef2f2" },
-  "Em negociação":      { color: "#f97316", bg: "#fff7ed" },
-  "Não lido":           { color: "#8b5cf6", bg: "#f5f3ff" },
-  "Agendado":           { color: "#f59e0b", bg: "#fffbeb" },
-  "Finalizado - vendido": { color: "#10b981", bg: "#f0fdf4" },
+  "Não atendido":          { color: "#ef4444", bg: "#fef2f2" },
+  "Em negociação":         { color: "#f97316", bg: "#fff7ed" },
+  "Não lido":              { color: "#8b5cf6", bg: "#f5f3ff" },
+  "Agendado":              { color: "#f59e0b", bg: "#fffbeb" },
+  "Finalizado - vendido":  { color: "#10b981", bg: "#f0fdf4" },
 };
 
 const KANBAN_STAGES: LeadStatus[] = [
@@ -54,113 +43,83 @@ const KANBAN_STAGES: LeadStatus[] = [
   "Finalizado - vendido",
 ];
 
-const initialLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Marcio",
-    company: "Fatec",
-    phone: "(11) 99999-0001",
-    email: "123@bol.com.br",
-    interest: "Honda Civic",
-    status: "Não atendido",
-    value: "R$ 55.000",
-    origin: "Instagram",
-    createdAt: "2024-05-10",
-    tags: ["Hot", "Prioridade"],
-  },
-  {
-    id: "2",
-    name: "Vini",
-    phone: "(11) 99999-0002",
-    email: "456@bol.com.br",
-    interest: "Toyota Corolla",
-    status: "Não lido",
-    value: "R$ 82.000",
-    origin: "WhatsApp",
-    createdAt: "2024-05-09",
-  },
-  {
-    id: "3",
-    name: "Eric",
-    phone: "(11) 99999-0003",
-    email: "789@bol.com.br",
-    interest: "Jeep Compass",
-    status: "Em negociação",
-    value: "R$ 110.000",
-    origin: "Site",
-    createdAt: "2024-05-08",
-    tags: ["Financiamento"],
-  },
-  {
-    id: "4",
-    name: "Ana",
-    company: "AutoPrime",
-    phone: "(11) 98888-1234",
-    email: "ana@autoprime.com",
-    interest: "BMW X5",
-    status: "Agendado",
-    value: "R$ 290.000",
-    origin: "Indicação",
-    createdAt: "2024-05-07",
-    tags: ["VIP"],
-  },
-];
-
-// ── Draggable card wrapper ────────────────────────────────────────────────────
-function DraggableCard({ lead, onEdit }: { lead: Lead; onEdit: () => void }) {
+// ── Draggable card wrapper ──────────────────────────────────────────────────
+function DraggableCard({
+  lead,
+  canDrag,
+  canDelegate,
+  onEdit,
+  onDelegate,
+}: {
+  lead: ApiLead;
+  canDrag: boolean;
+  canDelegate: boolean;
+  onEdit: () => void;
+  onDelegate: () => void;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lead.id,
+    disabled: !canDrag,
   });
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`touch-none outline-none ${isDragging ? "opacity-30" : ""}`}
+      {...(canDrag ? listeners : {})}
+      {...(canDrag ? attributes : {})}
+      className={`touch-none outline-none ${isDragging ? "opacity-30" : ""} ${!canDrag ? "cursor-not-allowed" : ""}`}
     >
       <LeadCard
-        name={lead.name}
-        interest={lead.interest}
-        states={lead.status}
-        value={lead.value}
+        clientName={lead.clientName}
+        subject={lead.subject}
         origin={lead.origin}
-        tags={lead.tags}
-        company={lead.company}
+        importance={lead.importance}
+        attendantName={lead.attendantName}
+        canDelegate={canDelegate}
         onEdit={onEdit}
+        onDelegate={onDelegate}
       />
     </div>
   );
 }
 
-// ── Kanban column ─────────────────────────────────────────────────────────────
+// ── Kanban column ───────────────────────────────────────────────────────────
 function KanbanColumn({
   stage,
   leads,
+  canDelegate,
+  currentUserId,
+  currentUserRole,
   onEdit,
+  onDelegate,
 }: {
   stage: LeadStatus;
-  leads: Lead[];
-  onEdit: (lead: Lead) => void;
+  leads: ApiLead[];
+  canDelegate: boolean;
+  currentUserId: string;
+  currentUserRole: string;
+  onEdit: (lead: ApiLead) => void;
+  onDelegate: (lead: ApiLead) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   const { color, bg } = STAGE_META[stage];
+
+  function canDragLead(lead: ApiLead): boolean {
+    if (currentUserRole !== "ATENDENTE") return true;
+    return lead.attendantId === currentUserId;
+  }
 
   return (
     <div
       className="flex h-full min-w-[230px] max-w-[230px] flex-col rounded-2xl overflow-hidden shadow-sm"
       style={{ background: isOver ? bg : "#f1f5f9" }}
     >
-      {/* Column header */}
       <div
         className="flex items-center justify-between px-3 py-2.5 shrink-0"
         style={{ borderTop: `3px solid ${color}` }}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="h-2 w-2 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
+          <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
           <h3 className="truncate text-[11px] font-bold uppercase tracking-widest text-slate-500">
             {stage}
           </h3>
@@ -173,7 +132,6 @@ function KanbanColumn({
         </span>
       </div>
 
-      {/* Drop zone — scrollable card list */}
       <div
         ref={setNodeRef}
         className={`flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto p-2 transition-colors duration-150 ${
@@ -181,7 +139,14 @@ function KanbanColumn({
         }`}
       >
         {leads.map((lead) => (
-          <DraggableCard key={lead.id} lead={lead} onEdit={() => onEdit(lead)} />
+          <DraggableCard
+            key={lead.id}
+            lead={lead}
+            canDrag={canDragLead(lead)}
+            canDelegate={canDelegate}
+            onEdit={() => onEdit(lead)}
+            onDelegate={() => onDelegate(lead)}
+          />
         ))}
 
         <div
@@ -198,159 +163,165 @@ function KanbanColumn({
   );
 }
 
-// ── Edit modal ────────────────────────────────────────────────────────────────
+// ── Edit modal ──────────────────────────────────────────────────────────────
 function EditLeadModal({
   lead,
   onClose,
-  onSave,
 }: {
-  lead: Lead;
+  lead: ApiLead;
   onClose: () => void;
-  onSave: (lead: Lead) => void;
 }) {
-  const [name, setName] = useState(lead.name);
-  const [company, setCompany] = useState(lead.company ?? "");
-  const [interest, setInterest] = useState(lead.interest);
-  const [value, setValue] = useState(lead.value ?? "");
-  const [origin, setOrigin] = useState(lead.origin ?? "");
-  const [status, setStatus] = useState<LeadStatus>(lead.status);
-
-  function handleSubmit(e: React.SyntheticEvent) {
-    e.preventDefault();
-    onSave({
-      ...lead,
-      name,
-      company: company || undefined,
-      interest,
-      value: value || undefined,
-      origin: origin || undefined,
-      status,
-    });
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">Editar Lead</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900">Detalhes do Lead</h2>
+          <button onClick={onClose} className="text-slate-400 transition hover:text-slate-700">✕</button>
+        </div>
+        <dl className="space-y-2 text-sm">
+          <Row label="Cliente"     value={lead.clientName} />
+          <Row label="Telefone"    value={lead.clientPhone ?? "—"} />
+          <Row label="E-mail"      value={lead.clientEmail ?? "—"} />
+          <Row label="Interesse"   value={lead.subject ?? "—"} />
+          <Row label="Origem"      value={lead.origin} />
+          <Row label="Temperatura" value={lead.importance} />
+          <Row label="Responsável" value={lead.attendantName} />
+          <Row label="Estágio"     value={lead.status} />
+        </dl>
+        <div className="mt-5 flex justify-end">
           <button
             onClick={onClose}
-            className="text-slate-400 transition hover:text-slate-700"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
-            ✕
+            Fechar
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Nome</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Empresa</label>
-              <input
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Interesse (veículo)</label>
-              <input
-                value={interest}
-                onChange={(e) => setInterest(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Valor</label>
-              <input
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder="R$ 0.000"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Origem</label>
-              <input
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                placeholder="Instagram, WhatsApp..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Estágio</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as LeadStatus)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              >
-                {KANBAN_STAGES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="rounded-xl bg-[#b81414] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#9f1313]"
-            >
-              Salvar
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-28 shrink-0 font-medium text-slate-500">{label}</dt>
+      <dd className="text-slate-800 capitalize">{value}</dd>
+    </div>
+  );
+}
+
+// ── Delegate modal ──────────────────────────────────────────────────────────
+function DelegateModal({
+  lead,
+  assignableUsers,
+  currentUserRole,
+  onClose,
+  onDelegate,
+}: {
+  lead: ApiLead;
+  assignableUsers: AssignableUser[];
+  currentUserRole: string;
+  onClose: () => void;
+  onDelegate: (attendantId: string) => Promise<void>;
+}) {
+  const [selectedUser, setSelectedUser] = useState<AssignableUser | null>(null);
+  const [saving, setSaving]             = useState(false);
+
+  async function handleConfirm() {
+    if (!selectedUser) return;
+    setSaving(true);
+    try {
+      await onDelegate(selectedUser.id);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Delegar lead</p>
+            <h2 className="text-base font-bold text-slate-900 mt-0.5">{lead.clientName}</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 transition hover:text-slate-700">✕</button>
+        </div>
+
+        <DelegationManager
+          currentUserRole={currentUserRole}
+          assignableUsers={assignableUsers}
+          selectedUserId={selectedUser?.id}
+          onSelect={setSelectedUser}
+        />
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!selectedUser || saving}
+            className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+          >
+            {saving ? "Delegando..." : "Confirmar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads);
-  const [showLeadForm, setShowLeadForm] = useState(false);
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const { user, logout } = useAuth();
 
+  const [showLeadForm, setShowLeadForm]     = useState(false);
+  const [editingLead, setEditingLead]       = useState<ApiLead | null>(null);
+  const [delegatingLead, setDelegatingLead] = useState<ApiLead | null>(null);
+  const [activeId, setActiveId]             = useState<string | null>(null);
+
+  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead } = useLeads({ paused: activeId !== null });
+
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const totalLeads = leads.length;
-  const newLeads = leads.filter((l) => l.status === "Não atendido").length;
-  const inProgressLeads = leads.filter((l) => l.status === "Em negociação").length;
-  const closedLeads = leads.filter((l) => l.status === "Finalizado - vendido").length;
+  const canDelegate = user?.role === "ADMIN" || user?.role === "GERENTE_GERAL" || user?.role === "GERENTE";
+  const canCreate   = user?.role !== "GERENTE_GERAL";
+
+  const visibleLeads = useMemo(() => {
+    if (user?.role === "ATENDENTE") {
+      return leads.filter((l) => l.attendantId === user.id);
+    }
+    if (user?.role === "GERENTE") {
+      const teamIds = new Set(assignableUsers.map((u) => u.id));
+      return leads.filter((l) => teamIds.has(l.attendantId) || l.attendantId === user.id);
+    }
+    return leads;
+  }, [leads, assignableUsers, user?.role, user?.id]);
 
   const leadsByStage = useMemo(() => {
-    const grouped = {} as Record<LeadStatus, Lead[]>;
+    const grouped = {} as Record<LeadStatus, ApiLead[]>;
     KANBAN_STAGES.forEach((stage) => (grouped[stage] = []));
-    leads.forEach((lead) => {
-      if (grouped[lead.status]) grouped[lead.status].push(lead);
+    visibleLeads.forEach((lead) => {
+      const stage = lead.status as LeadStatus;
+      if (grouped[stage]) grouped[stage].push(lead);
+      else grouped["Não atendido"].push(lead);
     });
     return grouped;
-  }, [leads]);
+  }, [visibleLeads]);
 
-  const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
+  const activeLead = activeId ? visibleLeads.find((l) => l.id === activeId) : null;
+
+  const totalLeads    = visibleLeads.length;
+  const newLeads      = leadsByStage["Não atendido"].length;
+  const inFunnelLeads = leadsByStage["Em negociação"].length + leadsByStage["Agendado"].length + leadsByStage["Não lido"].length;
+  const closedLeads   = leadsByStage["Finalizado - vendido"].length;
 
   function handleDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string);
@@ -360,30 +331,40 @@ export default function LeadsPage() {
     setActiveId(null);
     if (!over) return;
     const newStage = over.id as LeadStatus;
-    setLeads((prev) =>
-      prev.map((l) => (l.id === active.id ? { ...l, status: newStage } : l))
+    const lead = leads.find((l) => l.id === active.id);
+    if (!lead || lead.status === newStage) return;
+    moveLead(lead.id, newStage);
+  }
+
+  async function handleSaveLead(data: LeadFormData) {
+    await addLead(data);
+  }
+
+  async function handleDelegate(attendantId: string) {
+    if (!delegatingLead) return;
+    await delegateLead(delegatingLead.id, attendantId);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col bg-slate-100">
+        <Navbar user={user} onLogout={logout} />
+        <div className="flex flex-1 items-center justify-center text-slate-400 text-sm">
+          Carregando leads...
+        </div>
+      </div>
     );
   }
 
-  function handleSaveLead(formLead: {
-    name: string;
-    phone: string;
-    email: string;
-    interest: string;
-    status: string;
-  }) {
-    const newLead: Lead = {
-      ...formLead,
-      status: formLead.status as LeadStatus,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setLeads((prev) => [newLead, ...prev]);
-  }
-
-  function handleUpdateLead(updated: Lead) {
-    setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
-    setEditingLead(null);
+  if (error) {
+    return (
+      <div className="flex h-full flex-col bg-slate-100">
+        <Navbar user={user} onLogout={logout} />
+        <div className="flex flex-1 items-center justify-center text-red-500 text-sm">
+          {error}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -391,38 +372,32 @@ export default function LeadsPage() {
       <Navbar user={user} onLogout={logout} />
 
       <main className="flex flex-1 min-h-0 flex-col gap-3 px-5 pb-5 pt-4">
-        {/* ── Compact header bar ── */}
+        {/* Header bar */}
         <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm shrink-0">
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
-                CRM de Vendas
-              </p>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">
-                Pipeline de Leads
-              </h1>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">CRM de Vendas</p>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">Pipeline de Leads</h1>
             </div>
             <div className="hidden sm:flex items-center gap-4 text-xs text-slate-500">
-              <Stat label="Total" value={totalLeads} color="#64748b" />
-              <Stat label="Novos" value={newLeads} color="#3b82f6" />
-              <Stat label="Funil" value={inProgressLeads} color="#f97316" />
-              <Stat label="Fechados" value={closedLeads} color="#10b981" />
+              <Stat label="Total"    value={totalLeads}    color="#64748b" />
+              <Stat label="Novos"    value={newLeads}      color="#ef4444" />
+              <Stat label="Funil"    value={inFunnelLeads} color="#f97316" />
+              <Stat label="Fechados" value={closedLeads}   color="#10b981" />
             </div>
           </div>
-          <button
-            onClick={() => setShowLeadForm(true)}
-            className="rounded-xl bg-[#b81414] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#9f1313] shrink-0"
-          >
-            + Novo Lead
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => setShowLeadForm(true)}
+              className="rounded-xl bg-[#b81414] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#9f1313] shrink-0"
+            >
+              + Novo Lead
+            </button>
+          )}
         </div>
 
-        {/* ── Kanban board ── */}
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        {/* Kanban board */}
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex-1 min-h-0 overflow-x-auto">
             <div className="flex h-full gap-3 pb-1">
               {KANBAN_STAGES.map((stage) => (
@@ -430,7 +405,11 @@ export default function LeadsPage() {
                   key={stage}
                   stage={stage}
                   leads={leadsByStage[stage]}
+                  canDelegate={canDelegate}
+                  currentUserId={user?.id ?? ""}
+                  currentUserRole={user?.role ?? ""}
                   onEdit={setEditingLead}
+                  onDelegate={setDelegatingLead}
                 />
               ))}
             </div>
@@ -440,13 +419,12 @@ export default function LeadsPage() {
             {activeLead ? (
               <div className="w-[230px] rotate-2 shadow-2xl opacity-95">
                 <LeadCard
-                  name={activeLead.name}
-                  interest={activeLead.interest}
-                  states={activeLead.status}
-                  value={activeLead.value}
+                  clientName={activeLead.clientName}
+                  subject={activeLead.subject}
                   origin={activeLead.origin}
-                  tags={activeLead.tags}
-                  company={activeLead.company}
+                  importance={activeLead.importance}
+                  attendantName={activeLead.attendantName}
+                  canDelegate={false}
                 />
               </div>
             ) : null}
@@ -454,43 +432,33 @@ export default function LeadsPage() {
         </DndContext>
       </main>
 
-      {showLeadForm ? (
-        <LeadForm
-          onclose={() => setShowLeadForm(false)}
-          onSave={handleSaveLead}
-        />
-      ) : null}
+      {showLeadForm && (
+        <LeadForm onclose={() => setShowLeadForm(false)} onSave={handleSaveLead} />
+      )}
 
-      {editingLead ? (
-        <EditLeadModal
-          lead={editingLead}
-          onClose={() => setEditingLead(null)}
-          onSave={handleUpdateLead}
+      {editingLead && (
+        <EditLeadModal lead={editingLead} onClose={() => setEditingLead(null)} />
+      )}
+
+      {delegatingLead && (
+        <DelegateModal
+          lead={delegatingLead}
+          assignableUsers={assignableUsers}
+          currentUserRole={user?.role ?? ""}
+          onClose={() => setDelegatingLead(null)}
+          onDelegate={handleDelegate}
         />
-      ) : null}
+      )}
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
+function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span
-        className="h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: color }}
-      />
+      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
       <span className="text-slate-400">{label}:</span>
-      <span className="font-bold" style={{ color }}>
-        {value}
-      </span>
+      <span className="font-bold" style={{ color }}>{value}</span>
     </div>
   );
 }

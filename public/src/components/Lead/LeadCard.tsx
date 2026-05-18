@@ -1,73 +1,97 @@
+const IMPORTANCE_STYLE = {
+  frio:   { label: "Frio",   bg: "#eff6ff", color: "#3b82f6", border: "#bfdbfe" },
+  morno:  { label: "Morno",  bg: "#fff7ed", color: "#f97316", border: "#fed7aa" },
+  quente: { label: "Quente", bg: "#fef2f2", color: "#ef4444", border: "#fecaca" },
+};
+
+const ORIGIN_LABELS: Record<string, string> = {
+  visita_loja: "Loja",
+  telefone:    "Telefone",
+  whatsapp:    "WhatsApp",
+  instagram:   "Instagram",
+  formulario:  "Formulário",
+  outro:       "Outro",
+};
+
 interface LeadCardProps {
-  name: string;
-  interest: string;
-  states: string;
-  value?: string;
-  origin?: string;
-  tags?: string[];
-  company?: string;
+  clientName: string;
+  subject: string | null;
+  origin: string;
+  importance: "frio" | "morno" | "quente";
+  attendantName: string;
+  canDelegate: boolean;
   onEdit?: () => void;
+  onDelegate?: () => void;
 }
 
 export default function LeadCard({
-  name,
-  interest,
-  value,
+  clientName,
+  subject,
   origin,
-  tags,
-  company,
+  importance,
+  attendantName,
+  canDelegate,
   onEdit,
+  onDelegate,
 }: LeadCardProps) {
+  const imp = IMPORTANCE_STYLE[importance] ?? IMPORTANCE_STYLE.morno;
+  const originLabel = ORIGIN_LABELS[origin] ?? origin;
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm select-none cursor-grab active:cursor-grabbing">
+      {/* Header */}
       <div className="flex items-start justify-between gap-2 px-3 pt-3 pb-1">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-800">{name}</p>
-          {company && (
-            <p className="truncate text-[11px] text-slate-400">{company}</p>
+          <p className="truncate text-sm font-semibold text-slate-800">{clientName}</p>
+          {subject && (
+            <p className="truncate text-[11px] text-slate-400 mt-0.5">{subject}</p>
           )}
         </div>
         <GripIcon />
       </div>
 
-      <div className="flex items-center gap-1.5 px-3 pb-2">
-        <CarIcon />
-        <p className="truncate text-[11px] text-slate-500">{interest}</p>
+      {/* Badges */}
+      <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px] font-bold border"
+          style={{ background: imp.bg, color: imp.color, borderColor: imp.border }}
+        >
+          {imp.label}
+        </span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+          {originLabel}
+        </span>
       </div>
 
-      {(value ?? origin ?? (tags && tags.length > 0)) && (
-        <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
-          {value && (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-100">
-              {value}
-            </span>
-          )}
-          {origin && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
-              {origin}
-            </span>
-          )}
-          {tags?.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 border border-amber-100"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Attendant */}
+      <div className="flex items-center gap-1 px-3 pb-2">
+        <PersonIcon />
+        <p className="truncate text-[11px] text-slate-400">{attendantName}</p>
+      </div>
 
-      {onEdit && (
-        <div className="px-2 pb-2">
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 py-1.5 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-100 hover:border-blue-300"
-          >
-            <PencilIcon />
-            Editar lead
-          </button>
+      {/* Actions */}
+      {(onEdit || (canDelegate && onDelegate)) && (
+        <div className="flex gap-1.5 px-2 pb-2">
+          {onEdit && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-blue-200 bg-blue-50 py-1.5 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-100"
+            >
+              <PencilIcon />
+              Editar
+            </button>
+          )}
+          {canDelegate && onDelegate && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onDelegate(); }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-violet-200 bg-violet-50 py-1.5 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-100"
+            >
+              <DelegateIcon />
+              Delegar
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -87,14 +111,11 @@ function GripIcon() {
   );
 }
 
-function CarIcon() {
+function PersonIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-      <path d="M14 16H9m10 0h3v-3.13a4 4 0 0 0-1.24-2.83L19 8h-5" />
-      <path d="M7 8H5L3.04 10.04A4 4 0 0 0 2 12.87V16h2" />
-      <circle cx="6.5" cy="16.5" r="2.5" />
-      <circle cx="16.5" cy="16.5" r="2.5" />
-      <path d="M2 12h20" />
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
     </svg>
   );
 }
@@ -104,6 +125,17 @@ function PencilIcon() {
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function DelegateIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }

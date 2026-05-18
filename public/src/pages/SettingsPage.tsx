@@ -113,40 +113,38 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-          <aside className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-sm backdrop-blur">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-slate-200 bg-slate-100">
-                {settings.avatarUrl ? (
-                  <img
-                    src={settings.avatarUrl}
-                    alt="Avatar do usuário"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-slate-100 text-3xl text-slate-400">
-                    {settings.name ? settings.name.charAt(0).toUpperCase() : "U"}
-                  </div>
-                )}
-              </div>
-              <div>
-                <p className="text-xl font-semibold text-slate-900">{settings.name || "Usuário"}</p>
-                <p className="text-sm text-slate-500">{settings.email || "Seu e-mail"}</p>
-              </div>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-100">
-                <span>Alterar avatar</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 rounded-[2rem] border border-slate-200 bg-white/95 px-6 py-4 shadow-sm backdrop-blur">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
+              {settings.avatarUrl ? (
+                <img
+                  src={settings.avatarUrl}
+                  alt="Avatar do usuário"
+                  className="h-full w-full object-cover"
                 />
-              </label>
-              {avatarFileName ? (
-                <p className="text-xs text-slate-500">Arquivo selecionado: {avatarFileName}</p>
-              ) : null}
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-100 text-lg text-slate-400">
+                  {settings.name ? settings.name.charAt(0).toUpperCase() : "U"}
+                </div>
+              )}
             </div>
-          </aside>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-900">{settings.name || "Usuário"}</p>
+              <p className="truncate text-xs text-slate-500">{settings.email || "Seu e-mail"}</p>
+            </div>
+            <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-700 transition hover:bg-slate-100">
+              <span>Alterar avatar</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
+            {avatarFileName ? (
+              <p className="shrink-0 text-xs text-slate-400">📎 {avatarFileName}</p>
+            ) : null}
+          </div>
 
           <div className="space-y-6">
             <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-sm backdrop-blur">
@@ -277,7 +275,7 @@ export default function SettingsPage() {
               ) : null}
             </section>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

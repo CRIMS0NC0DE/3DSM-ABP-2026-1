@@ -3,11 +3,14 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import Logo from "../../assets/logo.branco.1000.png";
 import { useAuth } from "../../contexts/useAuth";
+import { usePermissions } from "../../hooks/usePermissions";
+import type { PermissionKey } from "../Collaborators/types";
 
 type SidebarItem = {
   label: string;
   to: string;
   icon: ReactNode;
+  permissionKey?: PermissionKey;
 };
 
 const SIDEBAR_STORAGE_KEY = "crm-sidebar-collapsed";
@@ -215,32 +218,53 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
+  const { can } = usePermissions();
   const [isCollapsed, setIsCollapsed] = useState(readCollapsedPreference);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
 
-  const items = useMemo<SidebarItem[]>(
+  const role = user?.role ?? "ATENDENTE";
+
+  const leadsLabel = role === "ATENDENTE" ? "Meus Leads" : "Leads";
+  const colabLabel =
+    role === "GERENTE"       ? "Minha Equipe"  :
+    role === "GERENTE_GERAL" ? "Gestão de Equipes" :
+    "Colaboradores";
+  const configLabel =
+    role === "ATENDENTE"     ? "Meu Perfil"    :
+    role === "GERENTE"       ? "Config. Unidade" :
+    "Configurações";
+  const reportLabel =
+    role === "ATENDENTE"     ? "Meu Relatório" :
+    role === "GERENTE"       ? "Rel. Regional"  :
+    role === "GERENTE_GERAL" ? "Rel. Consolidado" :
+    "Rel. Transações";
+
+  const allItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Dashboard",    to: "/dashboard",    icon: <DashboardIcon /> },
-      { label: "Garagem",      to: "/garagem",      icon: <CarIcon /> },
-      { label: "Leads",        to: "/leads",        icon: <LeadsIcon /> },
-      { label: "Chat",         to: "/chat",         icon: <ChatIcon /> },
-      { label: "Notificações", to: "/notificacoes", icon: <BellIcon /> },
-      { label: "Colaboradores",to: "/colaboradores",icon: <UsersIcon /> },
-      { label: "Configurações",to: "/configuracoes",icon: <SettingsIcon /> },
+      { label: "Dashboard",   to: "/dashboard",    icon: <DashboardIcon />, permissionKey: "dashboard" },
+      { label: "Garagem",     to: "/garagem",      icon: <CarIcon />,       permissionKey: "garagem" },
+      { label: leadsLabel,    to: "/leads",        icon: <LeadsIcon />,     permissionKey: "leads" },
+      { label: "Chat",        to: "/chat",         icon: <ChatIcon /> },
+      { label: "Notificações",to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
+      { label: colabLabel,    to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
+      { label: configLabel,   to: "/configuracoes",icon: <SettingsIcon />,  permissionKey: "configuracoes" },
     ],
-    [],
+    [leadsLabel, colabLabel, configLabel],
   );
 
-  const reportItems = useMemo<SidebarItem[]>(
+  const allReportItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Det. Pagamento",      to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon /> },
-      { label: "Rel. Transações", to: "/relatorio-transacoes", icon: <TransactionsIcon /> },
+      { label: "Det. Pagamento", to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
+      { label: reportLabel,      to: "/relatorio-transacoes", icon: <TransactionsIcon />,   permissionKey: "relatorio" },
     ],
-    [],
+    [reportLabel],
   );
+
+  const items = allItems.filter((item) => !item.permissionKey || can(item.permissionKey));
+  const reportItems = allReportItems.filter((item) => !item.permissionKey || can(item.permissionKey));
 
   const containerWidth = isCollapsed ? "w-20" : "w-72";
   const labelClass = isCollapsed ? "sr-only" : "truncate";
@@ -303,7 +327,7 @@ export default function Sidebar() {
         ))}
 
         {/* ── Report section ── */}
-        <div className="mt-3 pt-3 border-t border-white/10">
+        {reportItems.length > 0 && <div className="mt-3 pt-3 border-t border-white/10">
           <p className={isCollapsed ? "sr-only" : "mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400"}>
             Relatórios
           </p>
@@ -331,7 +355,7 @@ export default function Sidebar() {
               </NavLink>
             ))}
           </div>
-        </div>
+        </div>}
 
       </nav>
 
