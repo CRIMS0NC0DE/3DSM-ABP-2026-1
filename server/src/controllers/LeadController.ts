@@ -17,6 +17,13 @@ export class LeadController {
     response.status(201).json({ lead });
   };
 
+  update = async (request: Request, response: Response): Promise<void> => {
+    const actor  = request.authUser!;
+    const leadId = String(request.params.id ?? "");
+    const lead   = await this.leadService.updateLead(actor, leadId, request.body);
+    response.status(200).json({ lead });
+  };
+
   updateStatus = async (request: Request, response: Response): Promise<void> => {
     const actor = request.authUser!;
     const leadId = String(request.params.id ?? "");

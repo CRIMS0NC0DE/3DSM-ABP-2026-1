@@ -20,6 +20,7 @@ export function createLeadRoutes(authService: AuthService) {
   router.get("/",            asyncHandler(controller.list));
   router.post("/",           asyncHandler(controller.create));
   router.get("/assignable",  asyncHandler(controller.listAssignable));
+  router.patch("/:id",        asyncHandler(controller.update));
   router.patch("/:id/status", asyncHandler(controller.updateStatus));
   router.patch("/:id/assign", asyncHandler(controller.assign));
 

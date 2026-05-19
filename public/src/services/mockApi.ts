@@ -306,6 +306,21 @@ export async function updateLeadStatus(
   return { lead };
 }
 
+export async function updateLead(
+  _token: string,
+  leadId: string,
+  input: Partial<Pick<ApiLead, "clientName" | "clientPhone" | "clientEmail" | "subject" | "origin" | "importance" | "status">>,
+): Promise<{ lead: ApiLead }> {
+  await delay();
+  const leads = getLeads();
+  const idx   = leads.findIndex((l) => l.id === leadId);
+  if (idx === -1) throw new Error("Lead não encontrado.");
+  const lead = { ...leads[idx], ...input, updatedAt: new Date().toISOString() } as ApiLead;
+  leads[idx] = lead;
+  saveLeads(leads);
+  return { lead };
+}
+
 export async function assignLead(
   _token: string,
   leadId: string,

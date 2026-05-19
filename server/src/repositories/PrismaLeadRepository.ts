@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import type { CreateLeadInput, Lead } from "../domain/entities/Lead";
+import type { CreateLeadInput, UpdateLeadInput, Lead } from "../domain/entities/Lead";
 import type { LeadRepository } from "../domain/repositories/LeadRepository";
 
 const include = { attendant: { select: { id: true, name: true } } } as const;
@@ -77,6 +77,23 @@ export class PrismaLeadRepository implements LeadRepository {
         importance: input.importance,
         status: input.status,
         attendantId: input.attendantId,
+      },
+      include,
+    });
+    return toDomain(lead);
+  }
+
+  async update(id: string, input: UpdateLeadInput): Promise<Lead> {
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: {
+        ...(input.clientName  !== undefined && { clientName:  input.clientName }),
+        ...(input.clientPhone !== undefined && { clientPhone: input.clientPhone }),
+        ...(input.clientEmail !== undefined && { clientEmail: input.clientEmail }),
+        ...(input.subject     !== undefined && { subject:     input.subject }),
+        ...(input.origin      !== undefined && { origin:      input.origin }),
+        ...(input.importance  !== undefined && { importance:  input.importance }),
+        ...(input.status      !== undefined && { status:      input.status }),
       },
       include,
     });
