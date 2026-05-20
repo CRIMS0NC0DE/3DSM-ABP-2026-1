@@ -21,26 +21,29 @@ import { useLeads } from "../hooks/useLeads";
 import type { ApiLead, AssignableUser } from "../hooks/useLeads";
 
 export type LeadStatus =
-  | "Não atendido"
-  | "Em negociação"
-  | "Não lido"
+  | "Novo"
+  | "Em atendimento"
   | "Agendado"
-  | "Finalizado - vendido";
+  | "Em negociação"
+  | "Vendido"
+  | "Perdido";
 
 const STAGE_META: Record<LeadStatus, { color: string; bg: string }> = {
-  "Não atendido":          { color: "#ef4444", bg: "#fef2f2" },
-  "Em negociação":         { color: "#f97316", bg: "#fff7ed" },
-  "Não lido":              { color: "#8b5cf6", bg: "#f5f3ff" },
-  "Agendado":              { color: "#f59e0b", bg: "#fffbeb" },
-  "Finalizado - vendido":  { color: "#10b981", bg: "#f0fdf4" },
+  "Novo":           { color: "#ef4444", bg: "#fef2f2" },
+  "Em atendimento": { color: "#3b82f6", bg: "#eff6ff" },
+  "Agendado":       { color: "#f59e0b", bg: "#fffbeb" },
+  "Em negociação":  { color: "#f97316", bg: "#fff7ed" },
+  "Vendido":        { color: "#10b981", bg: "#f0fdf4" },
+  "Perdido":        { color: "#94a3b8", bg: "#f8fafc" },
 };
 
 const KANBAN_STAGES: LeadStatus[] = [
-  "Não atendido",
-  "Em negociação",
-  "Não lido",
+  "Novo",
+  "Em atendimento",
   "Agendado",
-  "Finalizado - vendido",
+  "Em negociação",
+  "Vendido",
+  "Perdido",
 ];
 
 // ── Draggable card wrapper ──────────────────────────────────────────────────
@@ -164,48 +167,124 @@ function KanbanColumn({
 }
 
 // ── Edit modal ──────────────────────────────────────────────────────────────
+const EDIT_STAGES = ["Novo", "Em atendimento", "Agendado", "Em negociação", "Vendido", "Perdido"] as const;
+const EDIT_ORIGINS = [
+  { value: "visita_loja", label: "Visita à loja" },
+  { value: "telefone",    label: "Telefone" },
+  { value: "whatsapp",    label: "WhatsApp" },
+  { value: "instagram",   label: "Instagram" },
+  { value: "formulario",  label: "Formulário" },
+  { value: "outro",       label: "Outro" },
+];
+const EDIT_IMPORTANCES = [
+  { value: "frio",   label: "Frio" },
+  { value: "morno",  label: "Morno" },
+  { value: "quente", label: "Quente" },
+] as const;
+
+const INPUT_CLS = "mt-1 block w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200";
+
 function EditLeadModal({
   lead,
   onClose,
+  onSave,
 }: {
   lead: ApiLead;
   onClose: () => void;
+  onSave: (data: LeadFormData) => Promise<void>;
 }) {
+  const [clientName, setClientName]   = useState(lead.clientName);
+  const [clientPhone, setClientPhone] = useState(lead.clientPhone ?? "");
+  const [clientEmail, setClientEmail] = useState(lead.clientEmail ?? "");
+  const [subject, setSubject]         = useState(lead.subject ?? "");
+  const [origin, setOrigin]           = useState(lead.origin);
+  const [importance, setImportance]   = useState<"frio" | "morno" | "quente">(lead.importance);
+  const [status, setStatus]           = useState(lead.status);
+  const [saving, setSaving]           = useState(false);
+
+  async function handleSubmit(e: { preventDefault(): void }) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave({
+        clientName,
+        clientPhone: clientPhone || null,
+        clientEmail: clientEmail || null,
+        subject: subject || null,
+        origin,
+        importance,
+        status,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">Detalhes do Lead</h2>
-          <button onClick={onClose} className="text-slate-400 transition hover:text-slate-700">✕</button>
+      <div className="w-full max-w-xl rounded-[2rem] bg-white p-6 shadow-2xl shadow-slate-900/30">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Editar Lead</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-900">{lead.clientName}</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-500 transition hover:text-slate-900" aria-label="Fechar modal">✕</button>
         </div>
-        <dl className="space-y-2 text-sm">
-          <Row label="Cliente"     value={lead.clientName} />
-          <Row label="Telefone"    value={lead.clientPhone ?? "—"} />
-          <Row label="E-mail"      value={lead.clientEmail ?? "—"} />
-          <Row label="Interesse"   value={lead.subject ?? "—"} />
-          <Row label="Origem"      value={lead.origin} />
-          <Row label="Temperatura" value={lead.importance} />
-          <Row label="Responsável" value={lead.attendantName} />
-          <Row label="Estágio"     value={lead.status} />
-        </dl>
-        <div className="mt-5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex gap-2">
-      <dt className="w-28 shrink-0 font-medium text-slate-500">{label}</dt>
-      <dd className="text-slate-800 capitalize">{value}</dd>
+        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Nome *</label>
+              <input value={clientName} onChange={(e) => setClientName(e.target.value)} className={INPUT_CLS} placeholder="Nome do cliente" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Telefone</label>
+              <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className={INPUT_CLS} placeholder="(11) 99999-9999" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">E-mail</label>
+              <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className={INPUT_CLS} placeholder="email@exemplo.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Interesse / Veículo</label>
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} className={INPUT_CLS} placeholder="Ex: Honda Civic" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Origem *</label>
+              <select value={origin} onChange={(e) => setOrigin(e.target.value)} className={INPUT_CLS}>
+                {EDIT_ORIGINS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Temperatura *</label>
+              <select value={importance} onChange={(e) => setImportance(e.target.value as "frio" | "morno" | "quente")} className={INPUT_CLS}>
+                {EDIT_IMPORTANCES.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Estágio</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className={INPUT_CLS}>
+                {EDIT_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={onClose} className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} className="rounded-2xl bg-[#b81414] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9f1313] disabled:opacity-60">
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -285,7 +364,7 @@ export default function LeadsPage() {
   const [delegatingLead, setDelegatingLead] = useState<ApiLead | null>(null);
   const [activeId, setActiveId]             = useState<string | null>(null);
 
-  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead } = useLeads({ paused: activeId !== null });
+  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead } = useLeads({ paused: activeId !== null });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -311,7 +390,7 @@ export default function LeadsPage() {
     visibleLeads.forEach((lead) => {
       const stage = lead.status as LeadStatus;
       if (grouped[stage]) grouped[stage].push(lead);
-      else grouped["Não atendido"].push(lead);
+      else grouped["Novo"].push(lead);
     });
     return grouped;
   }, [visibleLeads]);
@@ -319,9 +398,9 @@ export default function LeadsPage() {
   const activeLead = activeId ? visibleLeads.find((l) => l.id === activeId) : null;
 
   const totalLeads    = visibleLeads.length;
-  const newLeads      = leadsByStage["Não atendido"].length;
-  const inFunnelLeads = leadsByStage["Em negociação"].length + leadsByStage["Agendado"].length + leadsByStage["Não lido"].length;
-  const closedLeads   = leadsByStage["Finalizado - vendido"].length;
+  const newLeads      = leadsByStage["Novo"].length;
+  const inFunnelLeads = leadsByStage["Em atendimento"].length + leadsByStage["Agendado"].length + leadsByStage["Em negociação"].length;
+  const closedLeads   = leadsByStage["Vendido"].length;
 
   function handleDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string);
@@ -338,6 +417,12 @@ export default function LeadsPage() {
 
   async function handleSaveLead(data: LeadFormData) {
     await addLead(data);
+  }
+
+  async function handleUpdateLead(data: LeadFormData) {
+    if (!editingLead) return;
+    await updateLead(editingLead.id, data);
+    setEditingLead(null);
   }
 
   async function handleDelegate(attendantId: string) {
@@ -437,7 +522,7 @@ export default function LeadsPage() {
       )}
 
       {editingLead && (
-        <EditLeadModal lead={editingLead} onClose={() => setEditingLead(null)} />
+        <EditLeadModal lead={editingLead} onClose={() => setEditingLead(null)} onSave={handleUpdateLead} />
       )}
 
       {delegatingLead && (

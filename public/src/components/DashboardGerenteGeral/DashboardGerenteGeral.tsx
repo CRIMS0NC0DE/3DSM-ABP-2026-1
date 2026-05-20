@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import MetricCard from '../Dashboard/MetricCard'; // Caminho mantido conforme sua estrutura
+import { useState, useMemo } from 'react';
+import MetricCard from '../Dashboard/MetricCard';
+import DynamicIcon from '../UI/DynamicIcon';
 
 type PeriodoFiltro = 'semana' | 'mes' | 'ano' | 'customizado';
 type VisaoAtiva = 'comercial' | 'analitico';
@@ -141,10 +142,10 @@ export default function DashboardGerenteGeral() {
                     
                     {/* Linha Superior de Métricas Corporativas (Usando seu MetricCard) */}
                     <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <MetricCard title="Total de Leads" value={dadosFiltrados.kpis.total} color="blue" icon={<span>📊</span>} />
-                        <MetricCard title="Leads Quentes" value={dadosFiltrados.kpis.quentes} color="red" icon={<span>🔥</span>} />
-                        <MetricCard title="Vendas Consolidadas" value={dadosFiltrados.kpis.vendas} color="green" icon={<span>💰</span>} />
-                        <MetricCard title="Atingimento Geral" value={dadosFiltrados.kpis.meta} color="yellow" icon={<span>🎯</span>} />
+                        <MetricCard title="Total de Leads" value={dadosFiltrados.kpis.total} color="blue" icon={<DynamicIcon name="total" className="h-6 w-6" />} />
+                        <MetricCard title="Leads Quentes" value={dadosFiltrados.kpis.quentes} color="red" icon={<DynamicIcon name="fire" className="h-6 w-6" />} />
+                        <MetricCard title="Vendas Consolidadas" value={dadosFiltrados.kpis.vendas} color="green" icon={<DynamicIcon name="money" className="h-6 w-6" />} />
+                        <MetricCard title="Atingimento Geral" value={dadosFiltrados.kpis.meta} color="yellow" icon={<DynamicIcon name="meta" className="h-6 w-6" />} />
                     </section>
 
                     <section className="grid gap-8 lg:grid-cols-3">
@@ -228,7 +229,9 @@ export default function DashboardGerenteGeral() {
                     {/* Indicadores Avançados de Eficiência */}
                     <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl font-bold">📈</div>
+                            <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                                <DynamicIcon name="conversion" className="h-6 w-6" />
+                            </div>
                             <div>
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Taxa de Conversão Média Global</p>
                                 <p className="text-2xl font-bold text-slate-900 mt-0.5">{dadosFiltrados.funil.pctConvertidos}%</p>
@@ -236,7 +239,9 @@ export default function DashboardGerenteGeral() {
                             </div>
                         </div>
                         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl font-bold">⏱️</div>
+                            <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                                <DynamicIcon name="clock" className="h-6 w-6" />
+                            </div>
                             <div>
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tempo Médio até Atendimento</p>
                                 <p className="text-2xl font-bold text-slate-900 mt-0.5">{dadosFiltrados.atendentes[0].tempo}</p>
@@ -244,7 +249,9 @@ export default function DashboardGerenteGeral() {
                             </div>
                         </div>
                         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl font-bold">🎯</div>
+                            <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                                <DynamicIcon name="total" className="h-6 w-6" />
+                            </div>
                             <div>
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Amostragem Total Filtrada</p>
                                 <p className="text-2xl font-bold text-slate-900 mt-0.5">{dadosFiltrados.kpis.total}</p>

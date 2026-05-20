@@ -71,12 +71,12 @@ function mapCsvStatus(csvStatus: string, csvStage: string): string {
     case "Em negociação":
       return csvStage === "Aguardando pagamento" ? "Agendado" : "Em negociação";
     case "Finalizado com venda":
-      return "Finalizado - vendido";
+      return "Vendido";
     case "Finalizado sem venda":
-      return "Não atendido";
+      return "Perdido";
     case "Aberto":
     default:
-      return csvStage === "Contato inicial" ? "Não lido" : "Não atendido";
+      return csvStage === "Contato inicial" ? "Em atendimento" : "Novo";
   }
 }
 
@@ -301,6 +301,21 @@ export async function updateLeadStatus(
   const idx   = leads.findIndex((l) => l.id === leadId);
   if (idx === -1) throw new Error("Lead não encontrado.");
   const lead = { ...leads[idx], status, updatedAt: new Date().toISOString() } as ApiLead;
+  leads[idx] = lead;
+  saveLeads(leads);
+  return { lead };
+}
+
+export async function updateLead(
+  _token: string,
+  leadId: string,
+  input: Partial<Pick<ApiLead, "clientName" | "clientPhone" | "clientEmail" | "subject" | "origin" | "importance" | "status">>,
+): Promise<{ lead: ApiLead }> {
+  await delay();
+  const leads = getLeads();
+  const idx   = leads.findIndex((l) => l.id === leadId);
+  if (idx === -1) throw new Error("Lead não encontrado.");
+  const lead = { ...leads[idx], ...input, updatedAt: new Date().toISOString() } as ApiLead;
   leads[idx] = lead;
   saveLeads(leads);
   return { lead };

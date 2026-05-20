@@ -23,3 +23,13 @@ export interface CreateLeadInput {
   status: string;
   attendantId: string;
 }
+
+export interface UpdateLeadInput {
+  clientName?: string | undefined;
+  clientPhone?: string | null | undefined;
+  clientEmail?: string | null | undefined;
+  subject?: string | null | undefined;
+  origin?: string | undefined;
+  importance?: "frio" | "morno" | "quente" | undefined;
+  status?: string | undefined;
+}

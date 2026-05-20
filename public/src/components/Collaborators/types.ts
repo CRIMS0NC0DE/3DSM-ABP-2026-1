@@ -208,9 +208,9 @@ export function safeReadStoredCollaborators(): Collaborator[] {
     if (!Array.isArray(parsed)) return defaultCollaborators();
     // Migrate old records that lack teamId/teamName
     return (parsed as Collaborator[]).map((c) => ({
-      teamId: null,
-      teamName: null,
       ...c,
+      teamId: c.teamId ?? null,
+      teamName: c.teamName ?? null,
     }));
   } catch {
     localStorage.removeItem(COLLABORATORS_STORAGE_KEY);

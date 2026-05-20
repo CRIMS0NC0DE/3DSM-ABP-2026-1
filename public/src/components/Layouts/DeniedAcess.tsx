@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom'; // Importa o hook de navegação
 
 export default function DeniedAccess() {

@@ -24,6 +24,16 @@ const assignSchema = z.object({
   attendantId: z.string().min(1, "Informe o responsável."),
 });
 
+const updateLeadSchema = z.object({
+  clientName:  z.string().min(1).optional(),
+  clientPhone: z.string().optional().nullable(),
+  clientEmail: z.string().email().optional().nullable(),
+  subject:     z.string().optional().nullable(),
+  origin:      z.string().optional(),
+  importance:  z.enum(["frio", "morno", "quente"]).optional(),
+  status:      z.string().optional(),
+});
+
 export interface AssignableUser {
   id: string;
   nome: string;
@@ -66,6 +76,13 @@ export class LeadService {
       status:      parsed.status,
       attendantId: actor.id,
     });
+  }
+
+  async updateLead(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
+    const lead = await this.getLeadOrFail(leadId);
+    this.ensureCanActOnLead(actor, lead);
+    const parsed = updateLeadSchema.parse(input);
+    return this.leadRepository.update(leadId, parsed);
   }
 
   async updateStatus(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {

@@ -1,4 +1,4 @@
-import type { CreateLeadInput, Lead } from "../entities/Lead";
+import type { CreateLeadInput, UpdateLeadInput, Lead } from "../entities/Lead";
 
 export interface LeadRepository {
   findAll(): Promise<Lead[]>;
@@ -6,6 +6,7 @@ export interface LeadRepository {
   findByTeam(teamId: string): Promise<Lead[]>;
   findById(id: string): Promise<Lead | null>;
   create(input: CreateLeadInput): Promise<Lead>;
+  update(id: string, input: UpdateLeadInput): Promise<Lead>;
   updateStatus(id: string, status: string): Promise<Lead>;
   assign(id: string, attendantId: string): Promise<Lead>;
 }

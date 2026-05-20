@@ -170,6 +170,19 @@ export function updateLeadStatus(token: string, leadId: string, status: string) 
   });
 }
 
+export function updateLead(
+  token: string,
+  leadId: string,
+  input: Partial<Pick<ApiLead, "clientName" | "clientPhone" | "clientEmail" | "subject" | "origin" | "importance" | "status">>,
+) {
+  if (USE_MOCK) return mockApi.updateLead(token, leadId, input);
+  return request<{ lead: ApiLead }>(`/leads/${leadId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
 export function assignLead(token: string, leadId: string, attendantId: string) {
   if (USE_MOCK) return mockApi.assignLead(token, leadId, attendantId);
   return request<{ lead: ApiLead }>(`/leads/${leadId}/assign`, {

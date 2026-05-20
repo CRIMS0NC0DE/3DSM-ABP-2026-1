@@ -74,5 +74,14 @@ export function useLeads({ paused = false }: { paused?: boolean } = {}) {
     [token],
   );
 
-  return { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, refresh: fetchLeads };
+  const updateLead = useCallback(
+    async (leadId: string, input: Parameters<typeof api.updateLead>[2]): Promise<void> => {
+      if (!token) return;
+      const { lead } = await api.updateLead(token, leadId, input);
+      setLeads((prev) => prev.map((l) => (l.id === leadId ? lead : l)));
+    },
+    [token],
+  );
+
+  return { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead, refresh: fetchLeads };
 }

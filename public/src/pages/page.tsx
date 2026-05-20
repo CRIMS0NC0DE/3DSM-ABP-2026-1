@@ -10,10 +10,10 @@ import type { MetricSummary, ChartDataPoint, TransactionData, AttendantDataPoint
 
 // Mocks para o Relatório
 const metricsMock: MetricSummary[] = [
-  { id: '1', label: 'Receita Total', value: 'R$ 1.240.000', trend: 'up', trendValue: '+14%', icon: '💰' },
-  { id: '2', label: 'Novos Leads', value: '1.248', trend: 'up', trendValue: '+8%', icon: '📈' },
-  { id: '3', label: 'Taxa de Conversão', value: '18.4%', trend: 'down', trendValue: '-2%', icon: '🎯' },
-  { id: '4', label: 'Ticket Médio', value: 'R$ 85.400', trend: 'up', trendValue: '+5%', icon: '💎' },
+  { id: '1', label: 'Receita Total', value: 'R$ 1.240.000', trend: 'up', trendValue: '+14%', icon: 'money' },
+  { id: '2', label: 'Novos Leads', value: '1.248', trend: 'up', trendValue: '+8%', icon: 'leads' },
+  { id: '3', label: 'Taxa de Conversão', value: '18.4%', trend: 'down', trendValue: '-2%', icon: 'meta' },
+  { id: '4', label: 'Ticket Médio', value: 'R$ 85.400', trend: 'up', trendValue: '+5%', icon: 'premium' },
 ];
 
 const revenueMock: ChartDataPoint[] = [
