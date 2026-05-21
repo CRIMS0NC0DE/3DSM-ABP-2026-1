@@ -133,7 +133,7 @@ Perfis de acesso:
 - Operação de Leads  
 - Negociações  
 
-### 🚀 Sprint 3 (a definir)
+### 🚀 Sprint 3 (22/05 a 11/06)
 - Dashboards analíticos  
 - Auditoria  
 
@@ -145,7 +145,6 @@ Perfis de acesso:
 - **Scrum Master:** Márcio Bueno - [MarcioBuenoo](https://github.com/MarcioBuenoo)
 - **Dev. Team:** Davi Snaider - [davisnaider06](https://github.com/davisnaider06)
 - **Dev. Team:** Eric França - [EricFranca96](https://github.com/EricFranca90)
-- **Dev. Team:** Henrique Pinho - [rickshf](https://github.com/rickshf)
-- **Dev. Team:** Pedro Rosa -   
+- **Dev. Team:** Pedro Rosa - [PedHr](https://github.com/PedHr)  
 - **Focal Point:** Prof. Arley Ferreira de Souza - [arleysouza](https://github.com/arleysouza) 
 - **Parceiro:** 1000 Valle Multimarcas  
