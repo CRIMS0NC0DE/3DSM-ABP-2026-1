@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import type { CreateLeadInput, UpdateLeadInput, Lead } from "../domain/entities/Lead";
+import type { CreateLeadInput, UpdateLeadInput, Lead, LeadStatus } from "../domain/entities/Lead";
 import type { LeadRepository } from "../domain/repositories/LeadRepository";
 
 const include = { attendant: { select: { id: true, name: true } } } as const;
@@ -14,7 +14,7 @@ function toDomain(lead: {
   importance: string;
   status: string;
   attendantId: string;
-  attendant: { name: string };
+  attendant: { name: string } | null;
   createdAt: Date;
   updatedAt: Date;
 }): Lead {
@@ -26,9 +26,9 @@ function toDomain(lead: {
     subject: lead.subject,
     origin: lead.origin,
     importance: lead.importance as Lead["importance"],
-    status: lead.status,
+    status: lead.status as LeadStatus,
     attendantId: lead.attendantId,
-    attendantName: lead.attendant.name,
+    attendantName: lead.attendant?.name ?? "Sem responsavel",
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   };

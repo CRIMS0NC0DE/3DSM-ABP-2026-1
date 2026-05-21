@@ -28,6 +28,54 @@ export interface AssignableUser {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
+const statusAliasesToApi: Record<string, string> = {
+  novo: "novo",
+  "nao atendido": "novo",
+  "em atendimento": "em_atendimento",
+  agendado: "agendado",
+  "em negociacao": "em_negociacao",
+  vendido: "convertido",
+  convertido: "convertido",
+  perdido: "perdido",
+};
+
+const statusAliasesToUi: Record<string, string> = {
+  novo: "Novo",
+  "em atendimento": "Em atendimento",
+  agendado: "Agendado",
+  "em negociacao": "Em negociação",
+  convertido: "Vendido",
+  vendido: "Vendido",
+  perdido: "Perdido",
+};
+
+function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function toApiStatus(value: string): string {
+  const key = normalizeText(value);
+  return statusAliasesToApi[key] ?? "novo";
+}
+
+function toUiStatus(value: string): string {
+  const key = normalizeText(value);
+  return statusAliasesToUi[key] ?? value;
+}
+
+function mapLeadFromApi(lead: ApiLead): ApiLead {
+  return {
+    ...lead,
+    status: toUiStatus(lead.status),
+  };
+}
+
 export class ApiError extends Error {
   public readonly status: number;
   public readonly details?: unknown;
@@ -138,7 +186,7 @@ export function listLeads(token: string) {
   if (USE_MOCK) return mockApi.listLeads(token);
   return request<{ leads: ApiLead[] }>("/leads", {
     headers: { Authorization: `Bearer ${token}` },
-  });
+  }).then(({ leads }) => ({ leads: leads.map(mapLeadFromApi) }));
 }
 
 export function createLead(
@@ -154,11 +202,15 @@ export function createLead(
   },
 ) {
   if (USE_MOCK) return mockApi.createLead(token, input);
+  const payload = {
+    ...input,
+    status: toApiStatus(input.status),
+  };
   return request<{ lead: ApiLead }>("/leads", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
+    body: JSON.stringify(payload),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function updateLeadStatus(token: string, leadId: string, status: string) {
@@ -166,8 +218,8 @@ export function updateLeadStatus(token: string, leadId: string, status: string) 
   return request<{ lead: ApiLead }>(`/leads/${leadId}/status`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ status }),
-  });
+    body: JSON.stringify({ status: toApiStatus(status) }),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function updateLead(
@@ -176,11 +228,15 @@ export function updateLead(
   input: Partial<Pick<ApiLead, "clientName" | "clientPhone" | "clientEmail" | "subject" | "origin" | "importance" | "status">>,
 ) {
   if (USE_MOCK) return mockApi.updateLead(token, leadId, input);
+  const payload = { ...input } as typeof input;
+  if (payload.status !== undefined) {
+    payload.status = toApiStatus(payload.status);
+  }
   return request<{ lead: ApiLead }>(`/leads/${leadId}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
+    body: JSON.stringify(payload),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function assignLead(token: string, leadId: string, attendantId: string) {
@@ -189,7 +245,7 @@ export function assignLead(token: string, leadId: string, attendantId: string) {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ attendantId }),
-  });
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function listAssignable(token: string) {
