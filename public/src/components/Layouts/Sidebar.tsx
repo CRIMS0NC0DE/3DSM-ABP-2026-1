@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import Logo from "../../assets/logo.branco.1000.png";
@@ -12,14 +12,6 @@ type SidebarItem = {
   icon: ReactNode;
   permissionKey?: PermissionKey;
 };
-
-const SIDEBAR_STORAGE_KEY = "crm-sidebar-collapsed";
-
-function readCollapsedPreference(): boolean {
-  const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-  if (!raw) return false;
-  return raw === "true";
-}
 
 function DashboardIcon() {
   return (
@@ -168,26 +160,6 @@ function TransactionsIcon() {
   );
 }
 
-function CollapseIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M4 12h16"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-      <path
-        d={collapsed ? "M10 8l-4 4 4 4" : "M14 8l4 4-4 4"}
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function LogoutIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -219,11 +191,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { logout, user } = useAuth();
   const { can } = usePermissions();
-  const [isCollapsed, setIsCollapsed] = useState(readCollapsedPreference);
-
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
-  }, [isCollapsed]);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const role = user?.role ?? "ATENDENTE";
 
@@ -277,28 +245,18 @@ export default function Sidebar() {
         containerWidth,
       ].join(" ")}
       aria-label="Menu lateral"
+      onMouseEnter={() => setIsCollapsed(false)}
+      onMouseLeave={() => setIsCollapsed(true)}
     >
-      <div className="flex items-center justify-between gap-3 px-4 py-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <img
-            src={Logo}
-            alt="1000 Valle Multimarcas"
-            className={[
-              "shrink-0 object-contain opacity-95",
-              isCollapsed ? "h-10 w-10" : "h-10 w-48",
-            ].join(" ")}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsCollapsed((value) => !value)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-200 transition hover:bg-white/10"
-          aria-label={isCollapsed ? "Expandir menu" : "Recolher menu"}
-          title={isCollapsed ? "Expandir" : "Recolher"}
-        >
-          <CollapseIcon collapsed={isCollapsed} />
-        </button>
+      <div className="flex items-center px-4 py-5">
+        <img
+          src={Logo}
+          alt="1000 Valle Multimarcas"
+          className={[
+            "shrink-0 object-contain opacity-95",
+            isCollapsed ? "h-10 w-10" : "h-10 w-48",
+          ].join(" ")}
+        />
       </div>
 
       <nav className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-1 px-3">

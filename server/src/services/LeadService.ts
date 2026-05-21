@@ -1,10 +1,51 @@
 import { z } from "zod";
 
-import type { Lead } from "../domain/entities/Lead";
+import type { Lead, LeadStatus } from "../domain/entities/Lead";
 import type { LeadRepository } from "../domain/repositories/LeadRepository";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 import { AppError } from "../errors/AppError";
 import type { AuthenticatedUser } from "./AuthService";
+
+const statusAliases: Record<string, LeadStatus> = {
+  novo: "novo",
+  "nao atendido": "novo",
+  "em atendimento": "em_atendimento",
+  agendado: "agendado",
+  "em negociacao": "em_negociacao",
+  vendido: "convertido",
+  convertido: "convertido",
+  perdido: "perdido",
+};
+
+const statusValues = [
+  "novo",
+  "em_atendimento",
+  "agendado",
+  "em_negociacao",
+  "convertido",
+  "perdido",
+] as const;
+
+function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeStatus(input: unknown): LeadStatus | undefined {
+  if (typeof input !== "string") return undefined;
+  const key = normalizeText(input);
+  return statusAliases[key];
+}
+
+const statusSchema = z.preprocess(
+  (value) => normalizeStatus(value),
+  z.enum(statusValues),
+);
 
 const createLeadSchema = z.object({
   clientName: z.string().min(1, "Informe o nome do cliente."),
@@ -13,11 +54,11 @@ const createLeadSchema = z.object({
   subject: z.string().optional().nullable(),
   origin: z.string().min(1, "Informe a origem do lead."),
   importance: z.enum(["frio", "morno", "quente"]).default("morno"),
-  status: z.string().default("Não atendido"),
+  status: statusSchema.optional(),
 });
 
 const updateStatusSchema = z.object({
-  status: z.string().min(1),
+  status: statusSchema,
 });
 
 const assignSchema = z.object({
@@ -31,7 +72,7 @@ const updateLeadSchema = z.object({
   subject:     z.string().optional().nullable(),
   origin:      z.string().optional(),
   importance:  z.enum(["frio", "morno", "quente"]).optional(),
-  status:      z.string().optional(),
+  status:      statusSchema.optional(),
 });
 
 export interface AssignableUser {
@@ -73,21 +114,21 @@ export class LeadService {
       subject:     parsed.subject ?? null,
       origin:      parsed.origin,
       importance:  parsed.importance,
-      status:      parsed.status,
+      status:      parsed.status ?? "novo",
       attendantId: actor.id,
     });
   }
 
   async updateLead(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
     const lead = await this.getLeadOrFail(leadId);
-    this.ensureCanActOnLead(actor, lead);
+    await this.ensureCanActOnLead(actor, lead);
     const parsed = updateLeadSchema.parse(input);
     return this.leadRepository.update(leadId, parsed);
   }
 
   async updateStatus(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
     const lead = await this.getLeadOrFail(leadId);
-    this.ensureCanActOnLead(actor, lead);
+    await this.ensureCanActOnLead(actor, lead);
 
     const { status } = updateStatusSchema.parse(input);
     return this.leadRepository.updateStatus(leadId, status);
@@ -99,6 +140,7 @@ export class LeadService {
     }
 
     const lead = await this.getLeadOrFail(leadId);
+    await this.ensureCanActOnLead(actor, lead);
     const { attendantId } = assignSchema.parse(input);
     const target = await this.userRepository.findById(attendantId);
 
@@ -114,6 +156,10 @@ export class LeadService {
     }
 
     if (actor.role === "GERENTE") {
+      if (!actor.teamId) {
+        throw new AppError("Gerente sem equipe associada.", 403);
+      }
+
       if (target.role !== "ATENDENTE" || target.teamId !== actor.teamId) {
         throw new AppError("Gerente só pode atribuir a atendentes do seu time.", 403);
       }
@@ -151,9 +197,21 @@ export class LeadService {
     return lead;
   }
 
-  private ensureCanActOnLead(actor: AuthenticatedUser, lead: Lead): void {
+  private async ensureCanActOnLead(actor: AuthenticatedUser, lead: Lead): Promise<void> {
     if (actor.role === "ADMIN" || actor.role === "GERENTE_GERAL") return;
-    if (actor.role === "GERENTE") return;
+
+    if (actor.role === "GERENTE") {
+      if (!actor.teamId) {
+        throw new AppError("Gerente sem equipe associada.", 403);
+      }
+
+      const leadOwner = await this.userRepository.findById(lead.attendantId);
+      if (!leadOwner || leadOwner.teamId !== actor.teamId) {
+        throw new AppError("Você não tem permissão para mover este lead.", 403);
+      }
+      return;
+    }
+
     if (lead.attendantId !== actor.id) {
       throw new AppError("Você não tem permissão para mover este lead.", 403);
     }

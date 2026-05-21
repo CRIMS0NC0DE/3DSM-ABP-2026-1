@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import Navbar from "../components/Layouts/Navbar";
 import Logo from "../assets/logo_1000.svg";
 import { useAuth } from "../contexts/useAuth";
@@ -12,6 +13,10 @@ export default function Homepage() {
   const isGerente = user?.role === "GERENTE";
   const isGerenteGeral = user?.role === "GERENTE_GERAL";
   const isAdmin = user?.role === "ADMIN";
+
+  if (user?.role === "ATENDENTE") {
+    return <Navigate to="/leads" replace />;
+  }
 
   // =========================================================
   // INTERCEPÇÃO 1: GERENTE DE LOJA

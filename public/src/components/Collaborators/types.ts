@@ -28,9 +28,10 @@ export type Collaborator = {
 export const COLLABORATORS_STORAGE_KEY = "crm-collaborators-v1";
 
 export const TEAMS: Array<{ id: string; name: string }> = [
-  { id: "team-pa",       name: "Equipe PA" },
-  { id: "team-cacapava", name: "Equipe Caçapava" },
-  { id: "team-sjc",      name: "Equipe SJC" },
+  { id: "team-pa",              name: "Equipe PA" },
+  { id: "team-cacapava",        name: "Equipe Caçapava" },
+  { id: "team-sjc-cassiopeia",  name: "SJC - Cassiopeia" },
+  { id: "team-sjc-base",        name: "SJC - Base" },
 ];
 
 export const ROLE_LABELS: Record<UserRole, string> = {

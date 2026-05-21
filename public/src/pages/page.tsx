@@ -1,59 +1,119 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardHeader from "./DashboardHeader";
 import MetricsCards from "./MetricsCards";
 import RevenueChart from "./RevenueChart";
 import CategoryBarChart from "./CategoryBarChart";
 import MetricsTable from "./MetricsTable";
-import AttendantPerformance from "./AttendantPerformance";
 import LeadDistributionPie from "./LeadDistributionPie";
-import type { MetricSummary, ChartDataPoint, TransactionData, AttendantDataPoint, PieDataPoint } from "./index";
+import type { MetricSummary, ChartDataPoint, TransactionData, PieDataPoint } from "./index";
+import { useLeads } from "../hooks/useLeads";
 
-// Mocks para o Relatório
-const metricsMock: MetricSummary[] = [
-  { id: '1', label: 'Receita Total', value: 'R$ 1.240.000', trend: 'up', trendValue: '+14%', icon: 'money' },
-  { id: '2', label: 'Novos Leads', value: '1.248', trend: 'up', trendValue: '+8%', icon: 'leads' },
-  { id: '3', label: 'Taxa de Conversão', value: '18.4%', trend: 'down', trendValue: '-2%', icon: 'meta' },
-  { id: '4', label: 'Ticket Médio', value: 'R$ 85.400', trend: 'up', trendValue: '+5%', icon: 'premium' },
-];
+const ORIGIN_LABELS: Record<string, string> = {
+  visita_loja: "Visita à loja",
+  telefone: "Telefone",
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  formulario: "Formulário",
+  outro: "Outro",
+};
 
-const revenueMock: ChartDataPoint[] = [
-  { label: 'Jan', value: 450 }, { label: 'Fev', value: 520 }, { label: 'Mar', value: 480 },
-  { label: 'Abr', value: 610 }, { label: 'Mai', value: 550 }, { label: 'Jun', value: 670 },
-];
+const ORIGIN_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899"];
 
-const categoryMock: ChartDataPoint[] = [
-  { label: 'Seminovos', value: 145 },
-  { label: 'Zero KM', value: 82 },
-  { label: 'Consignados', value: 34 },
-];
+function leadStatusToTransaction(status: string): TransactionData["status"] {
+  if (status === "Vendido") return "Completed";
+  if (status === "Perdido") return "Canceled";
+  return "Pending";
+}
 
-const pieMock: PieDataPoint[] = [
-  { label: 'Instagram', value: 45, color: '#3b82f6' },
-  { label: 'Facebook', value: 25, color: '#10b981' },
-  { label: 'WhatsApp', value: 20, color: '#f59e0b' },
-  { label: 'Outros', value: 10, color: '#6366f1' },
-];
-
-const attendantsMock: AttendantDataPoint[] = [
-  { name: 'Márcio Bueno', sales: 24, leads: 110, conversion: '21.8%', avatarColor: 'bg-blue-500' },
-  { name: 'Vinícius Oliveira', sales: 19, leads: 95, conversion: '20%', avatarColor: 'bg-emerald-500' },
-  { name: 'Davi Snaider', sales: 15, leads: 120, conversion: '12.5%', avatarColor: 'bg-amber-500' },
-];
-
-const transactionsMock: TransactionData[] = [
-  { id: 1, customer: 'Henrique Pinho', status: 'Completed', date: '12 Out 2026', amount: 'R$ 125.000' },
-  { id: 2, customer: 'Eric França', status: 'Pending', date: '11 Out 2026', amount: 'R$ 84.900' },
-  { id: 3, customer: 'Pedro Rosa', status: 'Canceled', date: '10 Out 2026', amount: 'R$ 52.000' },
-];
+function importanceLabel(v: string) {
+  if (v === "quente") return "Quente";
+  if (v === "morno") return "Morno";
+  return "Frio";
+}
 
 export default function MetricsPage() {
   const [status, setStatus] = useState("all");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
+  const { leads, loading } = useLeads();
+
+  const filtered = useMemo(() => {
+    return leads.filter((lead) => {
+      if (status === "completed" && lead.status !== "Vendido") return false;
+      if (status === "canceled" && lead.status !== "Perdido") return false;
+      if (status === "pending" && (lead.status === "Vendido" || lead.status === "Perdido")) return false;
+      if (start && new Date(lead.createdAt) < new Date(start)) return false;
+      if (end && new Date(lead.createdAt) > new Date(end + "T23:59:59")) return false;
+      return true;
+    });
+  }, [leads, status, start, end]);
+
+  const total = filtered.length;
+  const convertidos = filtered.filter((l) => l.status === "Vendido").length;
+  const perdidos = filtered.filter((l) => l.status === "Perdido").length;
+  const emAberto = total - convertidos - perdidos;
+  const taxa = total > 0 ? ((convertidos / total) * 100).toFixed(1) : "0.0";
+
+  const metrics: MetricSummary[] = [
+    { id: "1", label: "Total de Leads", value: String(total), trend: "neutral", trendValue: `${total} leads`, icon: "leads" },
+    { id: "2", label: "Convertidos", value: String(convertidos), trend: convertidos > 0 ? "up" : "neutral", trendValue: `${convertidos} vendas`, icon: "money" },
+    { id: "3", label: "Taxa de Conversão", value: `${taxa}%`, trend: Number(taxa) >= 20 ? "up" : "down", trendValue: `${taxa}%`, icon: "meta" },
+    { id: "4", label: "Em Aberto", value: String(emAberto), trend: "neutral", trendValue: `${perdidos} perdidos`, icon: "premium" },
+  ];
+
+  const monthlyData = useMemo((): ChartDataPoint[] => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const label = d.toLocaleDateString("pt-BR", { month: "short" });
+      const value = filtered.filter((l) => {
+        const ld = new Date(l.createdAt);
+        return ld.getFullYear() === d.getFullYear() && ld.getMonth() === d.getMonth();
+      }).length;
+      return { label, value };
+    });
+  }, [filtered]);
+
+  const originData = useMemo((): PieDataPoint[] => {
+    const counts: Record<string, number> = {};
+    for (const lead of filtered) {
+      counts[lead.origin] = (counts[lead.origin] || 0) + 1;
+    }
+    return Object.entries(counts).map(([key, value], i) => ({
+      label: ORIGIN_LABELS[key] ?? key,
+      value,
+      color: ORIGIN_COLORS[i % ORIGIN_COLORS.length],
+    }));
+  }, [filtered]);
+
+  const importanceData = useMemo((): ChartDataPoint[] => [
+    { label: "Quente", value: filtered.filter((l) => l.importance === "quente").length },
+    { label: "Morno",  value: filtered.filter((l) => l.importance === "morno").length },
+    { label: "Frio",   value: filtered.filter((l) => l.importance === "frio").length },
+  ], [filtered]);
+
+  const transactions = useMemo((): TransactionData[] =>
+    filtered.slice(0, 10).map((lead) => ({
+      id: lead.id,
+      customer: lead.clientName,
+      status: leadStatusToTransaction(lead.status),
+      date: new Date(lead.createdAt).toLocaleDateString("pt-BR"),
+      amount: importanceLabel(lead.importance),
+    })),
+  [filtered]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
+        <p className="text-sm text-slate-400">Carregando relatório...</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 p-6 lg:p-10">
-      <DashboardHeader 
+      <DashboardHeader
         statusFilter={status}
         onStatusChange={setStatus}
         startDate={start}
@@ -63,29 +123,35 @@ export default function MetricsPage() {
       />
 
       <div className="space-y-8">
-        {/* KPIs */}
-        <MetricsCards data={metricsMock} />
+        <MetricsCards data={metrics} />
 
-        {/* Charts Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
-          <RevenueChart data={revenueMock} />
-          <LeadDistributionPie data={pieMock} />
+          <RevenueChart
+            data={monthlyData}
+            title="Leads por Mês"
+            subtitle="Últimos 6 meses"
+            tooltipLabel={(v) => `${v} leads`}
+            legendLabel="Leads criados"
+          />
+          <LeadDistributionPie data={originData} />
         </div>
 
-        {/* Middle Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <MetricsTable transactions={transactionsMock} />
+            <MetricsTable transactions={transactions} />
           </div>
-          <div className="space-y-6">
-            <CategoryBarChart data={categoryMock} />
-            <AttendantPerformance data={attendantsMock} />
+          <div>
+            <CategoryBarChart
+              data={importanceData}
+              title="Temperatura dos Leads"
+              unit="leads"
+            />
           </div>
         </div>
       </div>
 
       <footer className="mt-12 border-t border-slate-900 pt-6 text-center text-xs text-slate-600">
-        © 2026 1000 Valle Multimarcas - Sistema de Gestão Interna (Intranet)
+        © 2026 1000 Valle Multimarcas — Sistema de Gestão Interna
       </footer>
     </main>
   );

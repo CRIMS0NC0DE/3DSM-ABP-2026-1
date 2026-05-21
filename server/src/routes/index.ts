@@ -6,9 +6,11 @@ import { PasswordHashAuditDecorator } from "../security/password/PasswordHashAud
 import { JwtTokenService } from "../security/token/JwtTokenService";
 import { TokenAuditDecorator } from "../security/token/TokenAuditDecorator";
 import { AuthService } from "../services/AuthService";
+import { CollaboratorService } from "../services/CollaboratorService";
 import { createAuthRoutes } from "./authRoutes";
 import { createRbacRoutes } from "./rbacRoutes";
 import { createLeadRoutes } from "./leadRoutes";
+import { createCollaboratorRoutes } from "./collaboratorRoutes";
 
 export function createRouter() {
   const router = Router();
@@ -16,6 +18,7 @@ export function createRouter() {
   const passwordHasher = new PasswordHashAuditDecorator(new BcryptPasswordHasher());
   const tokenService = new TokenAuditDecorator(new JwtTokenService());
   const authService = new AuthService(userRepository, passwordHasher, tokenService);
+  const collaboratorService = new CollaboratorService(passwordHasher);
 
   router.get("/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
@@ -24,6 +27,7 @@ export function createRouter() {
   router.use("/auth", createAuthRoutes(authService));
   router.use("/rbac", createRbacRoutes(authService));
   router.use("/leads", createLeadRoutes(authService));
+  router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService));
 
   return router;
 }

@@ -1,7 +1,30 @@
 import type { LoginResponse } from "../types/auth";
-import type { Collaborator } from "../components/Collaborators/types";
+import { buildDefaultPermissoes, type Collaborator } from "../components/Collaborators/types";
 import type { UserRole } from "../types/auth";
 import * as mockApi from "./mockApi";
+
+type ApiCollaboratorRaw = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  teamId?: string | null;
+};
+
+function mapCollaborator(raw: ApiCollaboratorRaw): Collaborator {
+  return {
+    id: raw.id,
+    nome: raw.name,
+    email: raw.email,
+    telefone: "",
+    role: raw.role,
+    teamId: raw.teamId ?? null,
+    teamName: null,
+    ativo: true,
+    lastLoginAt: null,
+    permissoes: buildDefaultPermissoes(raw.role),
+  };
+}
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
@@ -27,6 +50,54 @@ export interface AssignableUser {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+const statusAliasesToApi: Record<string, string> = {
+  novo: "novo",
+  "nao atendido": "novo",
+  "em atendimento": "em_atendimento",
+  agendado: "agendado",
+  "em negociacao": "em_negociacao",
+  vendido: "convertido",
+  convertido: "convertido",
+  perdido: "perdido",
+};
+
+const statusAliasesToUi: Record<string, string> = {
+  novo: "Novo",
+  "em atendimento": "Em atendimento",
+  agendado: "Agendado",
+  "em negociacao": "Em negociação",
+  convertido: "Vendido",
+  vendido: "Vendido",
+  perdido: "Perdido",
+};
+
+function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function toApiStatus(value: string): string {
+  const key = normalizeText(value);
+  return statusAliasesToApi[key] ?? "novo";
+}
+
+function toUiStatus(value: string): string {
+  const key = normalizeText(value);
+  return statusAliasesToUi[key] ?? value;
+}
+
+function mapLeadFromApi(lead: ApiLead): ApiLead {
+  return {
+    ...lead,
+    status: toUiStatus(lead.status),
+  };
+}
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -95,50 +166,57 @@ export function getCurrentUser(token: string) {
   });
 }
 
-export function listCollaborators(token: string) {
+export async function listCollaborators(token: string): Promise<{ collaborators: Collaborator[] }> {
   if (USE_MOCK) return mockApi.listCollaborators(token);
-  return request<{ collaborators: Collaborator[] }>("/collaborators", {
+  const raw = await request<{ collaborators: ApiCollaboratorRaw[] }>("/collaborators", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
+  return { collaborators: raw.collaborators.map(mapCollaborator) };
 }
 
-export function createCollaborator(
+export async function createCollaborator(
   token: string,
   input: { nome: string; email: string; telefone: string; role: UserRole; senha: string; teamId?: string | null },
-) {
+): Promise<{ collaborator: Collaborator }> {
   if (USE_MOCK) return mockApi.createCollaborator(token, input);
-  return request<{ collaborator: Collaborator }>("/collaborators", {
+  const raw = await request<{ collaborator: ApiCollaboratorRaw }>("/collaborators", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      name: input.nome,
+      email: input.email,
+      password: input.senha,
+      role: input.role,
+      teamId: input.teamId,
+    }),
   });
+  return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
-export function updateCollaborator(
+export async function updateCollaborator(
   token: string,
   id: string,
   input: Partial<Pick<Collaborator, "nome" | "telefone" | "role" | "ativo" | "permissoes" | "teamId" | "teamName">>,
-) {
+): Promise<{ collaborator: Collaborator }> {
   if (USE_MOCK) return mockApi.updateCollaborator(token, id, input);
-  return request<{ collaborator: Collaborator }>(`/collaborators/${id}`, {
+  const raw = await request<{ collaborator: ApiCollaboratorRaw }>(`/collaborators/${id}`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      ...(input.nome !== undefined && { name: input.nome }),
+      ...(input.role !== undefined && { role: input.role }),
+      ...(input.teamId !== undefined && { teamId: input.teamId }),
+    }),
   });
+  return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
 export function listLeads(token: string) {
   if (USE_MOCK) return mockApi.listLeads(token);
   return request<{ leads: ApiLead[] }>("/leads", {
     headers: { Authorization: `Bearer ${token}` },
-  });
+  }).then(({ leads }) => ({ leads: leads.map(mapLeadFromApi) }));
 }
 
 export function createLead(
@@ -154,11 +232,15 @@ export function createLead(
   },
 ) {
   if (USE_MOCK) return mockApi.createLead(token, input);
+  const payload = {
+    ...input,
+    status: toApiStatus(input.status),
+  };
   return request<{ lead: ApiLead }>("/leads", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
+    body: JSON.stringify(payload),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function updateLeadStatus(token: string, leadId: string, status: string) {
@@ -166,8 +248,8 @@ export function updateLeadStatus(token: string, leadId: string, status: string) 
   return request<{ lead: ApiLead }>(`/leads/${leadId}/status`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ status }),
-  });
+    body: JSON.stringify({ status: toApiStatus(status) }),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function updateLead(
@@ -176,11 +258,15 @@ export function updateLead(
   input: Partial<Pick<ApiLead, "clientName" | "clientPhone" | "clientEmail" | "subject" | "origin" | "importance" | "status">>,
 ) {
   if (USE_MOCK) return mockApi.updateLead(token, leadId, input);
+  const payload = { ...input } as typeof input;
+  if (payload.status !== undefined) {
+    payload.status = toApiStatus(payload.status);
+  }
   return request<{ lead: ApiLead }>(`/leads/${leadId}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
+    body: JSON.stringify(payload),
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function assignLead(token: string, leadId: string, attendantId: string) {
@@ -189,7 +275,7 @@ export function assignLead(token: string, leadId: string, attendantId: string) {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ attendantId }),
-  });
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
 }
 
 export function listAssignable(token: string) {

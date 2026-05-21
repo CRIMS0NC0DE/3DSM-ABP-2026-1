@@ -20,28 +20,27 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<SettingsState>(() => {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings) as SettingsState;
-      return {
-        ...parsed,
-      };
-    }
+    const saved = savedSettings ? (JSON.parse(savedSettings) as SettingsState) : null;
 
     return {
-      avatarUrl: "",
-      name: user?.nome ?? "",
-      email: user?.email ?? "",
-      bio: "",
+      avatarUrl: saved?.avatarUrl ?? "",
+      name: user?.nome ?? saved?.name ?? "",
+      email: user?.email ?? saved?.email ?? "",
+      bio: saved?.bio ?? "",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
-      notificationsEnabled: true,
-      autoLogoutEnabled: false,
+      notificationsEnabled: saved?.notificationsEnabled ?? true,
+      autoLogoutEnabled: saved?.autoLogoutEnabled ?? false,
     };
   });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.nome) setSettings((s) => ({ ...s, name: user.nome }));
+    if (user?.email) setSettings((s) => ({ ...s, email: user.email }));
+  }, [user?.nome, user?.email]);
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));

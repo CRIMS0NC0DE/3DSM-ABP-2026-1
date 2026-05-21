@@ -11,9 +11,10 @@ import csvRaw from "../data/leads.csv?raw";
 // ── Teams ────────────────────────────────────────────────────────────────────
 
 const TEAMS: Record<string, { id: string; name: string }> = {
-  PA:       { id: "team-pa",       name: "Equipe PA" },
-  CACAPAVA: { id: "team-cacapava", name: "Equipe Caçapava" },
-  SJC:      { id: "team-sjc",      name: "Equipe SJC" },
+  PA:             { id: "team-pa",             name: "Equipe PA" },
+  CACAPAVA:       { id: "team-cacapava",        name: "Equipe Caçapava" },
+  SJC_CASSIOPEIA: { id: "team-sjc-cassiopeia",  name: "SJC - Cassiopeia" },
+  SJC_BASE:       { id: "team-sjc-base",        name: "SJC - Base" },
 };
 
 // ── Static user catalogue ────────────────────────────────────────────────────
@@ -28,7 +29,8 @@ const MOCK_USERS: MockUser[] = [
   // Gerentes
   { id: "gerente-pa",       nome: "Gerente PA",         email: "gerente.pa@empresa.com.br",     senha: "gerente123", role: "GERENTE",       teamId: TEAMS.PA.id },
   { id: "gerente-cacapava", nome: "Gerente Caçapava",   email: "gerente.cacapava@empresa.com.br", senha: "gerente123", role: "GERENTE",    teamId: TEAMS.CACAPAVA.id },
-  { id: "gerente-sjc",      nome: "Gerente SJC",        email: "gerente.sjc@empresa.com.br",    senha: "gerente123", role: "GERENTE",       teamId: TEAMS.SJC.id },
+  { id: "gerente-sjc-cassiopeia", nome: "Gerente SJC Cassiopeia", email: "gerente.sjc.cassiopeia@empresa.com.br", senha: "gerente123", role: "GERENTE", teamId: TEAMS.SJC_CASSIOPEIA.id },
+  { id: "gerente-sjc-base",      nome: "Gerente SJC Base",       email: "gerente.sjc.base@empresa.com.br",      senha: "gerente123", role: "GERENTE", teamId: TEAMS.SJC_BASE.id },
   // Equipe PA (6 atendentes)
   { id: "consultor-01",  nome: "Consultor 01",  email: "consultor1@empresa.com.br",  senha: "consul123", role: "ATENDENTE", teamId: TEAMS.PA.id },
   { id: "consultor-02",  nome: "Consultor 02",  email: "consultor2@empresa.com.br",  senha: "consul123", role: "ATENDENTE", teamId: TEAMS.PA.id },
@@ -47,11 +49,12 @@ const MOCK_USERS: MockUser[] = [
   { id: "consultor-15",  nome: "Consultor 15",  email: "consultor15@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.CACAPAVA.id },
   { id: "consultor-19",  nome: "Consultor 19",  email: "consultor19@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.CACAPAVA.id },
   { id: "consultor-20",  nome: "Consultor 20",  email: "consultor20@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.CACAPAVA.id },
-  // Equipe SJC (4 atendentes)
-  { id: "consultor-05",  nome: "Consultor 05",  email: "consultor5@empresa.com.br",  senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC.id },
-  { id: "consultor-11",  nome: "Consultor 11",  email: "consultor11@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC.id },
-  { id: "consultor-14",  nome: "Consultor 14",  email: "consultor14@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC.id },
-  { id: "consultor-16",  nome: "Consultor 16",  email: "consultor16@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC.id },
+  // SJC - Cassiopeia (2 atendentes)
+  { id: "consultor-05",  nome: "Consultor 05",  email: "consultor5@empresa.com.br",  senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC_CASSIOPEIA.id },
+  { id: "consultor-11",  nome: "Consultor 11",  email: "consultor11@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC_CASSIOPEIA.id },
+  // SJC - Base (2 atendentes)
+  { id: "consultor-14",  nome: "Consultor 14",  email: "consultor14@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC_BASE.id },
+  { id: "consultor-16",  nome: "Consultor 16",  email: "consultor16@empresa.com.br", senha: "consul123", role: "ATENDENTE", teamId: TEAMS.SJC_BASE.id },
 ];
 
 // ── CSV → ApiLead conversion ──────────────────────────────────────────────────

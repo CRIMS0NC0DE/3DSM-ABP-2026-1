@@ -3,19 +3,21 @@ import type { AssignableUser } from "../../services/api";
 
 // Roles each actor can delegate to, in hierarchy order
 const DELEGATION_MAP: Record<string, string[]> = {
-  ADMIN:         ["GERENTE_GERAL", "GERENTE", "ATENDENTE"],
-  GERENTE_GERAL: ["GERENTE"],
+  ADMIN:         ["ADMIN", "GERENTE_GERAL", "GERENTE", "ATENDENTE"],
+  GERENTE_GERAL: ["GERENTE_GERAL", "GERENTE", "ATENDENTE"],
   GERENTE:       ["ATENDENTE"],
   ATENDENTE:     [],
 };
 
 const ROLE_LABELS: Record<string, string> = {
+  ADMIN:         "Admin",
   GERENTE_GERAL: "Ger. Geral",
   GERENTE:       "Gerente",
   ATENDENTE:     "Vendedor",
 };
 
 const ROLE_COLORS: Record<string, { active: string; ring: string }> = {
+  ADMIN:         { active: "bg-slate-800 text-white",    ring: "ring-slate-300" },
   GERENTE_GERAL: { active: "bg-indigo-600 text-white",   ring: "ring-indigo-300" },
   GERENTE:       { active: "bg-violet-600 text-white",   ring: "ring-violet-300" },
   ATENDENTE:     { active: "bg-emerald-600 text-white",  ring: "ring-emerald-300" },

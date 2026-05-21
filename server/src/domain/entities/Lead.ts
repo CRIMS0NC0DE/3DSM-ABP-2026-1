@@ -1,3 +1,11 @@
+export type LeadStatus =
+  | "novo"
+  | "em_atendimento"
+  | "agendado"
+  | "em_negociacao"
+  | "convertido"
+  | "perdido";
+
 export interface Lead {
   id: string;
   clientName: string;
@@ -6,7 +14,7 @@ export interface Lead {
   subject: string | null;
   origin: string;
   importance: "frio" | "morno" | "quente";
-  status: string;
+  status: LeadStatus;
   attendantId: string;
   attendantName: string;
   createdAt: Date;
@@ -20,7 +28,7 @@ export interface CreateLeadInput {
   subject?: string | null;
   origin: string;
   importance: "frio" | "morno" | "quente";
-  status: string;
+  status: LeadStatus;
   attendantId: string;
 }
 
@@ -31,5 +39,5 @@ export interface UpdateLeadInput {
   subject?: string | null | undefined;
   origin?: string | undefined;
   importance?: "frio" | "morno" | "quente" | undefined;
-  status?: string | undefined;
+  status?: LeadStatus | undefined;
 }
