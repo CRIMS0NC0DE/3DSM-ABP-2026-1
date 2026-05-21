@@ -17,6 +17,7 @@ const rolePermissions: Record<string, string[]> = {
     Permission.VER_DASHBOARD_OPERACIONAL,
   ],
   [Role.GERENTE]: [
+    Permission.CRIAR_LEAD,
     Permission.EDITAR_LEAD,
     Permission.VER_LEAD,
     Permission.VER_CLIENTE,
@@ -51,6 +52,14 @@ const rolePermissions: Record<string, string[]> = {
   ],
 };
 
+async function upsertTeam(id: string, name: string) {
+  return prisma.team.upsert({
+    where: { name },
+    update: {},
+    create: { id, name },
+  });
+}
+
 async function upsertRole(name: string, description: string) {
   return prisma.role.upsert({
     where: { name },
@@ -68,6 +77,13 @@ async function upsertPermission(name: string) {
 }
 
 async function seedDatabase() {
+  await Promise.all([
+    upsertTeam("team-pa",             "Equipe PA"),
+    upsertTeam("team-cacapava",       "Equipe Caçapava"),
+    upsertTeam("team-sjc-cassiopeia", "SJC - Cassiopeia"),
+    upsertTeam("team-sjc-base",       "SJC - Base"),
+  ]);
+
   const roles = await Promise.all([
     upsertRole(Role.ATENDENTE, "Atendente - acessa apenas seus proprios leads"),
     upsertRole(Role.GERENTE, "Gerente - acessa atendentes e leads da sua equipe"),
@@ -149,6 +165,78 @@ async function seedDatabase() {
       email: "vendedor@sistema.com",
       password: await bcrypt.hash("Vendedor@2026", 10),
       roleId: attendantRole.id,
+    },
+  });
+
+  // ── Perfis reais ──────────────────────────────────────────────────────────
+
+  await prisma.user.upsert({
+    where: { email: "marcin.bueno@sistema.com" },
+    update: { name: "Marcin Bueno", roleId: adminRole.id, password: await bcrypt.hash("Marcin@2026", 10) },
+    create: {
+      name: "Marcin Bueno",
+      email: "marcin.bueno@sistema.com",
+      password: await bcrypt.hash("Marcin@2026", 10),
+      roleId: adminRole.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "vinicius.oliveira@sistema.com" },
+    update: { name: "Vinicius Oliveira", roleId: generalManagerRole.id, password: await bcrypt.hash("Vinicius@2026", 10) },
+    create: {
+      name: "Vinicius Oliveira",
+      email: "vinicius.oliveira@sistema.com",
+      password: await bcrypt.hash("Vinicius@2026", 10),
+      roleId: generalManagerRole.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "pedro.rosa@sistema.com" },
+    update: { name: "Pedro Rosa", roleId: managerRole.id, teamId: "team-sjc-cassiopeia", password: await bcrypt.hash("Pedro@2026", 10) },
+    create: {
+      name: "Pedro Rosa",
+      email: "pedro.rosa@sistema.com",
+      password: await bcrypt.hash("Pedro@2026", 10),
+      roleId: managerRole.id,
+      teamId: "team-sjc-cassiopeia",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "davi.snaider@sistema.com" },
+    update: { name: "Davi Snaider", roleId: managerRole.id, teamId: "team-sjc-base", password: await bcrypt.hash("Davi@2026", 10) },
+    create: {
+      name: "Davi Snaider",
+      email: "davi.snaider@sistema.com",
+      password: await bcrypt.hash("Davi@2026", 10),
+      roleId: managerRole.id,
+      teamId: "team-sjc-base",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "thiago.nunes@sistema.com" },
+    update: { name: "Thiago Nunes", roleId: attendantRole.id, teamId: "team-sjc-cassiopeia", password: await bcrypt.hash("Thiago@2026", 10) },
+    create: {
+      name: "Thiago Nunes",
+      email: "thiago.nunes@sistema.com",
+      password: await bcrypt.hash("Thiago@2026", 10),
+      roleId: attendantRole.id,
+      teamId: "team-sjc-cassiopeia",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "eric.franca@sistema.com" },
+    update: { name: "Eric França", roleId: attendantRole.id, teamId: "team-sjc-base", password: await bcrypt.hash("Eric@2026", 10) },
+    create: {
+      name: "Eric França",
+      email: "eric.franca@sistema.com",
+      password: await bcrypt.hash("Eric@2026", 10),
+      roleId: attendantRole.id,
+      teamId: "team-sjc-base",
     },
   });
 }

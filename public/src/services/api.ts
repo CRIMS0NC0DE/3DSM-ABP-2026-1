@@ -1,7 +1,30 @@
 import type { LoginResponse } from "../types/auth";
-import type { Collaborator } from "../components/Collaborators/types";
+import { buildDefaultPermissoes, type Collaborator } from "../components/Collaborators/types";
 import type { UserRole } from "../types/auth";
 import * as mockApi from "./mockApi";
+
+type ApiCollaboratorRaw = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  teamId?: string | null;
+};
+
+function mapCollaborator(raw: ApiCollaboratorRaw): Collaborator {
+  return {
+    id: raw.id,
+    nome: raw.name,
+    email: raw.email,
+    telefone: "",
+    role: raw.role,
+    teamId: raw.teamId ?? null,
+    teamName: null,
+    ativo: true,
+    lastLoginAt: null,
+    permissoes: buildDefaultPermissoes(raw.role),
+  };
+}
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
@@ -143,43 +166,50 @@ export function getCurrentUser(token: string) {
   });
 }
 
-export function listCollaborators(token: string) {
+export async function listCollaborators(token: string): Promise<{ collaborators: Collaborator[] }> {
   if (USE_MOCK) return mockApi.listCollaborators(token);
-  return request<{ collaborators: Collaborator[] }>("/collaborators", {
+  const raw = await request<{ collaborators: ApiCollaboratorRaw[] }>("/collaborators", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
+  return { collaborators: raw.collaborators.map(mapCollaborator) };
 }
 
-export function createCollaborator(
+export async function createCollaborator(
   token: string,
   input: { nome: string; email: string; telefone: string; role: UserRole; senha: string; teamId?: string | null },
-) {
+): Promise<{ collaborator: Collaborator }> {
   if (USE_MOCK) return mockApi.createCollaborator(token, input);
-  return request<{ collaborator: Collaborator }>("/collaborators", {
+  const raw = await request<{ collaborator: ApiCollaboratorRaw }>("/collaborators", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      name: input.nome,
+      email: input.email,
+      password: input.senha,
+      role: input.role,
+      teamId: input.teamId,
+    }),
   });
+  return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
-export function updateCollaborator(
+export async function updateCollaborator(
   token: string,
   id: string,
   input: Partial<Pick<Collaborator, "nome" | "telefone" | "role" | "ativo" | "permissoes" | "teamId" | "teamName">>,
-) {
+): Promise<{ collaborator: Collaborator }> {
   if (USE_MOCK) return mockApi.updateCollaborator(token, id, input);
-  return request<{ collaborator: Collaborator }>(`/collaborators/${id}`, {
+  const raw = await request<{ collaborator: ApiCollaboratorRaw }>(`/collaborators/${id}`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      ...(input.nome !== undefined && { name: input.nome }),
+      ...(input.role !== undefined && { role: input.role }),
+      ...(input.teamId !== undefined && { teamId: input.teamId }),
+    }),
   });
+  return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
 export function listLeads(token: string) {
