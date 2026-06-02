@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from
 
 import NewCollaboratorModal from "../components/Collaborators/NewCollaboratorModal";
 import RolePill from "../components/Collaborators/RolePill";
-import Switch from "../components/Collaborators/Switch";
 import {
   ASSIGNABLE_ROLES,
   buildDefaultPermissoes,
+  canDeleteCollaborator,
   COLLABORATORS_STORAGE_KEY,
   filterCollaboratorsForViewer,
   formatRelativeTime,
@@ -19,6 +19,7 @@ import Logo from "../assets/logo_1000.svg";
 import Navbar from "../components/Layouts/Navbar";
 import {
   createCollaborator,
+  deleteCollaborator as deleteCollaboratorRequest,
   listCollaborators,
   updateCollaborator as updateCollaboratorRequest,
 } from "../services/api";
@@ -98,14 +99,14 @@ function RoleSelect({
 export default function CollaboratorsPage() {
   const { token, user, logout } = useAuth();
 
-  // ATENDENTE is blocked
-  if (user?.role === "ATENDENTE") {
-    return <AccessBlocked onLogout={logout} />;
-  }
-
   const viewerRole   = user?.role   ?? "ATENDENTE";
   const viewerTeamId = user?.teamId ?? null;
-  const canCreate    = viewerRole !== "ATENDENTE";
+  const canCreate    = viewerRole === "ADMIN";
+  // Gerente local só gerencia atendentes da própria equipe → coluna de função é redundante
+  const showRoleColumns = viewerRole !== "GERENTE";
+  const tableGridCols    = showRoleColumns
+    ? "grid-cols-[1.4fr_1.1fr_0.9fr_0.8fr_1fr]"
+    : "grid-cols-[1.6fr_1.4fr_1fr]";
 
   const [allCollaborators, setAllCollaborators] = useState<Collaborator[]>(() =>
     safeReadStoredCollaborators(),
@@ -121,6 +122,8 @@ export default function CollaboratorsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [apiError, setApiError]     = useState<string | null>(null);
   const [saving, setSaving]         = useState<string | null>(null); // id of row being saved
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Persist to localStorage whenever allCollaborators changes
   useEffect(() => {
@@ -166,11 +169,6 @@ export default function CollaboratorsPage() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  const selected = useMemo(
-    () => (selectedId ? allCollaborators.find((c) => c.id === selectedId) ?? null : null),
-    [allCollaborators, selectedId],
-  );
-
   // ── Persist helper ────────────────────────────────────────────────────────
   async function persistCollaborator(next: Collaborator) {
     setAllCollaborators((prev) => prev.map((c) => (c.id === next.id ? next : c)));
@@ -207,6 +205,28 @@ export default function CollaboratorsPage() {
     setSelectedId(c.id);
     setDraft(createDraft(c));
     setSuccessMsg(null);
+    setConfirmDelete(false);
+  }
+
+  async function handleDelete(c: Collaborator) {
+    if (!token) {
+      setApiError("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    setDeletingId(c.id);
+    try {
+      await deleteCollaboratorRequest(token, c.id);
+      setAllCollaborators((prev) => prev.filter((x) => x.id !== c.id));
+      setSelectedId(null);
+      setDraft(null);
+      setConfirmDelete(false);
+      setApiError(null);
+      setSuccessMsg(`${c.nome} excluído com sucesso.`);
+    } catch (err: unknown) {
+      setApiError(getApiErrorMessage(err));
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function handleRowKeyDown(e: KeyboardEvent<HTMLDivElement>, c: Collaborator) {
@@ -221,6 +241,11 @@ export default function CollaboratorsPage() {
     visibleCollaborators.forEach((c) => { map[c.role] = (map[c.role] ?? 0) + 1; });
     return map;
   }, [visibleCollaborators]);
+
+  // ATENDENTE is blocked (após os hooks, p/ não violar rules-of-hooks)
+  if (user?.role === "ATENDENTE") {
+    return <AccessBlocked onLogout={logout} />;
+  }
 
   return (
     <div className="relative min-h-screen bg-slate-100 text-slate-900">
@@ -299,20 +324,22 @@ export default function CollaboratorsPage() {
                   </select>
                 </label>
 
-                <label className="inline-flex items-center gap-2 text-sm text-slate-600">
-                  <span className="font-semibold text-slate-700">Função</span>
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => { setRoleFilter(e.target.value as UserRole | "TODOS"); setPage(1); }}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  >
-                    {availableRoleFilters.map((r) => (
-                      <option key={r} value={r}>
-                        {r === "TODOS" ? "Todos" : ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {showRoleColumns && (
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <span className="font-semibold text-slate-700">Função</span>
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => { setRoleFilter(e.target.value as UserRole | "TODOS"); setPage(1); }}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    >
+                      {availableRoleFilters.map((r) => (
+                        <option key={r} value={r}>
+                          {r === "TODOS" ? "Todos" : ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
 
               <label className="relative w-full max-w-md">
@@ -330,13 +357,12 @@ export default function CollaboratorsPage() {
             {/* Table */}
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
               {/* Header row */}
-              <div className="grid grid-cols-[1.4fr_1.1fr_0.8fr_0.75fr_1fr_0.5fr] bg-slate-50 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              <div className={cx("grid bg-slate-50 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500", tableGridCols)}>
                 <span>Nome</span>
                 <span>E-mail</span>
                 <span>Unidade</span>
-                <span>Função</span>
-                <span>Alterar Cargo</span>
-                <span className="text-right">Status</span>
+                {showRoleColumns && <span>Função</span>}
+                {showRoleColumns && <span>Alterar Cargo</span>}
               </div>
 
               <div className="divide-y divide-slate-100 bg-white">
@@ -356,7 +382,8 @@ export default function CollaboratorsPage() {
                         onClick={() => selectRow(c)}
                         onKeyDown={(e) => handleRowKeyDown(e, c)}
                         className={cx(
-                          "grid cursor-pointer grid-cols-[1.4fr_1.1fr_0.8fr_0.75fr_1fr_0.5fr] items-center gap-3 px-4 py-3.5 text-left text-sm outline-none transition",
+                          "grid cursor-pointer items-center gap-3 px-4 py-3.5 text-left text-sm outline-none transition",
+                          tableGridCols,
                           isSelected ? "bg-violet-50/60" : "hover:bg-slate-50",
                           isSaving   ? "opacity-60" : "",
                         )}
@@ -377,37 +404,29 @@ export default function CollaboratorsPage() {
                         </span>
 
                         {/* Função badge */}
-                        <span>
-                          <RolePill role={c.role} />
-                        </span>
+                        {showRoleColumns && (
+                          <span>
+                            <RolePill role={c.role} />
+                          </span>
+                        )}
 
                         {/* Inline role change */}
-                        <span onClick={(e) => e.stopPropagation()}>
-                          <RoleSelect
-                            current={c.role}
-                            viewerRole={viewerRole}
-                            disabled={isSaving}
-                            onChange={(newRole) =>
-                              updateField(c.id, (cur) => ({
-                                ...cur,
-                                role:      newRole,
-                                permissoes: buildDefaultPermissoes(newRole),
-                              }))
-                            }
-                          />
-                        </span>
-
-                        {/* Status toggle */}
-                        <span className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                          <Switch
-                            checked={c.ativo}
-                            label={`Status de ${c.nome}`}
-                            disabled={isSaving}
-                            onChange={(next) =>
-                              updateField(c.id, (cur) => ({ ...cur, ativo: next }))
-                            }
-                          />
-                        </span>
+                        {showRoleColumns && (
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <RoleSelect
+                              current={c.role}
+                              viewerRole={viewerRole}
+                              disabled={isSaving}
+                              onChange={(newRole) =>
+                                updateField(c.id, (cur) => ({
+                                  ...cur,
+                                  role:      newRole,
+                                  permissoes: buildDefaultPermissoes(newRole),
+                                }))
+                              }
+                            />
+                          </span>
+                        )}
                       </div>
                     );
                   })
@@ -499,46 +518,92 @@ export default function CollaboratorsPage() {
                 <InfoRow label="Último login" value={formatRelativeTime(draft.lastLoginAt)} />
               </InfoCard>
 
-              <InfoCard title="Perfil">
-                <label className="grid gap-1.5">
-                  <span className="text-xs font-semibold text-slate-500">Função</span>
-                  <select
-                    value={draft.role}
-                    onChange={(e) => {
-                      const r = e.target.value as UserRole;
-                      setDraft((d) => d ? { ...d, role: r, permissoes: buildDefaultPermissoes(r) } : d);
-                    }}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  >
-                    {(ASSIGNABLE_ROLES[viewerRole] ?? []).map((r) => (
-                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                    ))}
-                  </select>
-                </label>
-              </InfoCard>
+              {showRoleColumns && (
+                <InfoCard title="Perfil">
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500">Função</span>
+                    <select
+                      value={draft.role}
+                      onChange={(e) => {
+                        const r = e.target.value as UserRole;
+                        setDraft((d) => d ? { ...d, role: r, permissoes: buildDefaultPermissoes(r) } : d);
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    >
+                      {(ASSIGNABLE_ROLES[viewerRole] ?? []).map((r) => (
+                        <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                      ))}
+                    </select>
+                  </label>
+                </InfoCard>
+              )}
             </div>
 
             {/* Actions */}
-            <div className="mt-5 flex gap-3 border-t border-slate-100 pt-5">
-              <button
-                type="button"
-                onClick={() => { if (selected) setDraft(createDraft(selected)); }}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={saving === draft.id}
-                onClick={() => {
-                  void persistCollaborator(draft);
-                  setSuccessMsg(`${draft.nome} atualizado com sucesso.`);
-                }}
-                className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving === draft.id ? "Salvando..." : "Salvar"}
-              </button>
-            </div>
+            {confirmDelete ? (
+              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-800">
+                  Excluir {draft.nome}?
+                </p>
+                <p className="mt-1 text-sm text-red-600">
+                  Esta ação é permanente e será registrada nos logs de auditoria.
+                </p>
+                <div className="mt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deletingId === draft.id}
+                    onClick={() => { void handleDelete(draft); }}
+                    className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deletingId === draft.id ? "Excluindo..." : "Excluir definitivamente"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
+                {canDeleteCollaborator(
+                  { role: viewerRole, id: user?.id, teamId: viewerTeamId },
+                  draft,
+                ) && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                  >
+                    Excluir
+                  </button>
+                )}
+                <div className="ml-auto flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedId(null); setDraft(null); }}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {showRoleColumns ? "Cancelar" : "Fechar"}
+                  </button>
+                  {showRoleColumns && (
+                    <button
+                      type="button"
+                      disabled={saving === draft.id}
+                      onClick={() => {
+                        void persistCollaborator(draft);
+                        setSuccessMsg(`${draft.nome} atualizado com sucesso.`);
+                      }}
+                      className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {saving === draft.id ? "Salvando..." : "Salvar"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

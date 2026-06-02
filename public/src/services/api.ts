@@ -49,6 +49,30 @@ export interface AssignableUser {
   role: string;
 }
 
+/** Tipos de ação registrados na auditoria. */
+export type AuditAction =
+  | "lead_created"          // captação de lead
+  | "lead_status_changed"   // mudança de status
+  | "lead_assigned"         // delegação de lead
+  | "collaborator_created"  // novo colaborador
+  | "collaborator_deleted"  // exclusão de colaborador
+  | "role_changed"          // alteração de cargo
+  | "permission_changed"    // alteração de permissão
+  | "login";                // acesso ao sistema
+
+export interface AuditLogEntry {
+  id: string;
+  action: AuditAction;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  /** Alvo da ação (nome do lead, colaborador etc.). */
+  target: string;
+  /** Descrição legível do que aconteceu. */
+  description: string;
+  createdAt: string;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const statusAliasesToApi: Record<string, string> = {
@@ -212,6 +236,14 @@ export async function updateCollaborator(
   return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
+export function deleteCollaborator(token: string, id: string) {
+  if (USE_MOCK) return mockApi.deleteCollaborator(token, id);
+  return request<{ success: boolean }>(`/collaborators/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export function listLeads(token: string) {
   if (USE_MOCK) return mockApi.listLeads(token);
   return request<{ leads: ApiLead[] }>("/leads", {
@@ -281,6 +313,13 @@ export function assignLead(token: string, leadId: string, attendantId: string) {
 export function listAssignable(token: string) {
   if (USE_MOCK) return mockApi.listAssignable(token);
   return request<{ users: AssignableUser[] }>("/leads/assignable", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function listAuditLogs(token: string) {
+  if (USE_MOCK) return mockApi.listAuditLogs(token);
+  return request<{ logs: AuditLogEntry[] }>("/audit-logs", {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

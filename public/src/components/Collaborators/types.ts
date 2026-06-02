@@ -10,7 +10,8 @@ export type PermissionKey =
   | "detalhes_pagamento"
   | "relatorio"
   | "transacoes"
-  | "pontos";
+  | "pontos"
+  | "logs";
 
 export type Collaborator = {
   id: string;
@@ -56,6 +57,30 @@ export function getVisibleRoles(viewerRole: UserRole): UserRole[] {
   return [];
 }
 
+/** Cargos que cada ator pode excluir — exclusão é exclusiva do ADMIN. */
+export const DELETABLE_ROLES: Record<UserRole, UserRole[]> = {
+  ADMIN:         ["GERENTE_GERAL", "GERENTE", "ATENDENTE"],
+  GERENTE_GERAL: [],
+  GERENTE:       [],
+  ATENDENTE:     [],
+};
+
+/**
+ * Regra de exclusão de colaborador:
+ * - segue a hierarquia de DELETABLE_ROLES
+ * - ninguém pode excluir a si mesmo
+ * - GERENTE só exclui dentro da própria equipe
+ */
+export function canDeleteCollaborator(
+  viewer: { role: UserRole; id: string | undefined; teamId: string | null },
+  target: Collaborator,
+): boolean {
+  if (!viewer.id || viewer.id === target.id) return false;
+  if (!DELETABLE_ROLES[viewer.role].includes(target.role)) return false;
+  if (viewer.role === "GERENTE") return target.teamId === viewer.teamId;
+  return true;
+}
+
 export function filterCollaboratorsForViewer(
   all: Collaborator[],
   viewerRole: UserRole,
@@ -79,6 +104,7 @@ export const MODULES: Array<{ key: PermissionKey; label: string }> = [
   { key: "transacoes",         label: "Transações" },
   { key: "detalhes_pagamento", label: "Detalhes pagamento" },
   { key: "pontos",             label: "Pontos" },
+  { key: "logs",               label: "Logs de auditoria" },
   { key: "configuracoes",      label: "Configurações" },
 ];
 
@@ -97,6 +123,7 @@ export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, bo
     detalhes_pagamento: false,
     transacoes:         false,
     pontos:             false,
+    logs:               false, // Logs de auditoria: exclusivo do ADMIN
   };
 
   if (role === "GERENTE_GERAL") {
@@ -109,8 +136,13 @@ export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, bo
     return { ...allEnabled, ...restricted };
   }
 
-  // ATENDENTE: sem Colaboradores (acesso restrito já tratado na página)
-  return { ...allEnabled, ...restricted, colaboradores: false };
+  // ATENDENTE: sem Colaboradores e sem Dashboard (landing vai para "Meus Leads")
+  return { ...allEnabled, ...restricted, colaboradores: false, dashboard: false };
+}
+
+/** Página inicial padrão de cada perfil (usada em redirects e fallback de permissão). */
+export function landingPathForRole(role: UserRole): string {
+  return buildDefaultPermissoes(role).dashboard ? "/dashboard" : "/leads";
 }
 
 export function defaultCollaborators(): Collaborator[] {

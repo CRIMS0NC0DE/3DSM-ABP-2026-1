@@ -19,6 +19,7 @@ import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import RelatoryPage from "./pages/RelatoryPage";
+import LogsPage from "./pages/LogsPage";
 
 export default function App() {
   return (
@@ -35,7 +36,9 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AuthenticatedLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route element={<PermissionRoute permission="dashboard" />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Route>
               <Route path="/chat" element={<ChatPage />} />
               <Route element={<PermissionRoute permission="garagem" />}>
                 <Route path="/garagem" element={<GaragePage />} />
@@ -51,6 +54,9 @@ export default function App() {
               </Route>
               <Route element={<PermissionRoute permission="configuracoes" />}>
                 <Route path="/configuracoes" element={<SettingsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="logs" />}>
+                <Route path="/logs" element={<LogsPage />} />
               </Route>
               <Route element={<PermissionRoute permission="relatorio" />}>
                 <Route path="/relatorio-transacoes" element={<RelatoryPage />} />

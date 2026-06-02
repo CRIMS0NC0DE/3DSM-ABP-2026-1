@@ -160,6 +160,21 @@ function TransactionsIcon() {
   );
 }
 
+function LogsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M6 4h9l5 5v11a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      <path d="M14 4v5h5" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+      <path d="M8 13h8M8 16.5h5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -218,6 +233,7 @@ export default function Sidebar() {
       { label: "Chat",        to: "/chat",         icon: <ChatIcon /> },
       { label: "Notificações",to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
       { label: colabLabel,    to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
+      { label: "Logs",        to: "/logs",         icon: <LogsIcon />,      permissionKey: "logs" },
       { label: configLabel,   to: "/configuracoes",icon: <SettingsIcon />,  permissionKey: "configuracoes" },
     ],
     [leadsLabel, colabLabel, configLabel],
