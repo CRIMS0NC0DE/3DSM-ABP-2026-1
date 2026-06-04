@@ -15,7 +15,7 @@ export class AuditLogService {
         entityType,
         entityId,
         action,
-        changes,
+        changes: changes as any,
       },
     });
   }
