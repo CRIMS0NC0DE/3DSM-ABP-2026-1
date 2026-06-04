@@ -4,6 +4,8 @@ import PermissionRoute from "./components/Auth/PermissionRoute";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import NotificationToast from "./components/UI/NotificationToast";
 import GaragePage from "./pages/GaragePage";
 import Dashboard from "./pages/Dashboard";
 import LoginPage from "./pages/LoginPage";
@@ -19,12 +21,14 @@ import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import RelatoryPage from "./pages/RelatoryPage";
+import AdminLogsPage from "./pages/AdminLogsPage";
 
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+      <NotificationProvider>
+        <BrowserRouter>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -55,14 +59,17 @@ export default function App() {
               <Route element={<PermissionRoute permission="relatorio" />}>
                 <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
               </Route>
+              <Route path="/audit-logs" element={<AdminLogsPage />} />
               <Route element={<PermissionRoute permission="detalhes_pagamento" />}>
                 <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
               </Route>
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+          <NotificationToast />
+        </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

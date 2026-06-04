@@ -1,4 +1,5 @@
 import type { AuthUser } from "../../types/auth";
+import { Link } from "react-router-dom";
 
 interface NavbarProps {
   user: AuthUser | null;
@@ -15,20 +16,27 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
 
       <ul className="hidden gap-6 text-sm font-medium text-slate-300 md:flex">
         <li>
-          <a href="#" className="transition hover:text-cyan-300">
+          <Link to="/dashboard" className="transition hover:text-cyan-300">
             Dashboard
-          </a>
+          </Link>
         </li>
         <li>
-          <a href="#" className="transition hover:text-cyan-300">
+          <Link to="/leads" className="transition hover:text-cyan-300">
             Leads
-          </a>
+          </Link>
         </li>
         <li>
-          <a href="#" className="transition hover:text-cyan-300">
+          <Link to="/relatorio-transacoes" className="transition hover:text-cyan-300">
             Relatorios
-          </a>
+          </Link>
         </li>
+        {user?.role === "ADMIN" && (
+          <li>
+            <Link to="/audit-logs" className="transition hover:text-cyan-300">
+              Logs
+            </Link>
+          </li>
+        )}
       </ul>
 
       <div className="flex items-center gap-4">

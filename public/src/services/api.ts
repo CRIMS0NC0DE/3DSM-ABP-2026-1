@@ -284,3 +284,9 @@ export function listAssignable(token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export function listAuditLogs(token: string) {
+  return request<{ logs: unknown[] }>("/audit-logs", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
