@@ -14,6 +14,7 @@ export function createCollaboratorRoutes(authService: AuthService, collaboratorS
   router.get("/", asyncHandler(controller.list));
   router.post("/", asyncHandler(controller.create));
   router.patch("/:id", asyncHandler(controller.update));
+  router.delete("/:id", asyncHandler(controller.delete));
 
   return router;
 }

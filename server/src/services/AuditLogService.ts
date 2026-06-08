@@ -24,7 +24,17 @@ export class AuditLogService {
     return prisma.auditLog.findMany({
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: { user: true },
+      include: {
+        // Nunca expor o hash de senha no payload de auditoria.
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: { select: { name: true } },
+          },
+        },
+      },
     });
   }
 }

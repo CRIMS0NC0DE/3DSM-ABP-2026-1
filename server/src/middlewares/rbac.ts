@@ -1,16 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../errors/AppError";
 
-// Estender interface Express Request para incluir dados do usuário
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-      userRole?: string;
-      userTeamId?: string | null;
-    }
-  }
-}
+// A augmentation de Express.Request (userId, userRole, userTeamId) vive em
+// src/@types/express.d.ts — declarar de novo aqui causaria conflito de tipos.
 
 /**
  * Middleware para validar se o usuário tem um dos roles necessários

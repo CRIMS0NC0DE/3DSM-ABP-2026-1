@@ -379,7 +379,22 @@ export default function LeadsPage() {
   const [archiveMsg, setArchiveMsg]         = useState<string | null>(null);
   const [viewArchived, setViewArchived]     = useState(false);
 
-  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead } = useLeads({ paused: activeId !== null });
+  const {
+    leads,
+    archivedLeads,
+    assignableUsers,
+    loading,
+    loadingArchived,
+    error,
+    moveLead,
+    delegateLead,
+    addLead,
+    updateLead,
+    archiveLeads,
+    fetchArchived,
+    unarchiveLead,
+  } = useLeads({ paused: activeId !== null });
+  const { notify } = useNotifications();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

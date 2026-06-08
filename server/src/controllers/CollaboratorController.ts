@@ -25,4 +25,15 @@ export class CollaboratorController {
     const collaborator = await this.collaboratorService.update(idParam, request.body);
     response.status(200).json({ collaborator });
   };
+
+  delete = async (request: Request, response: Response): Promise<void> => {
+    const idParam = request.params.id;
+    if (!idParam || Array.isArray(idParam)) {
+      response.status(400).json({ error: "Invalid collaborator id" });
+      return;
+    }
+
+    await this.collaboratorService.delete(idParam);
+    response.status(200).json({ success: true });
+  };
 }

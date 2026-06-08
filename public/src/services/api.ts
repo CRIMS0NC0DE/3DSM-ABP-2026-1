@@ -316,3 +316,73 @@ export function listAssignable(token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Arquivamento de leads ─────────────────────────────────────────────────────
+// Espelha as rotas POST /leads/archive, GET /leads/archived e PATCH /leads/:id/unarchive.
+
+export function archiveLeads(token: string) {
+  if (USE_MOCK) return mockApi.archiveLeads(token);
+  return request<{ message: string }>("/leads/archive", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function listArchivedLeads(token: string) {
+  if (USE_MOCK) return mockApi.listArchivedLeads(token);
+  return request<{ leads: ApiLead[] }>("/leads/archived", {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ leads }) => ({ leads: leads.map(mapLeadFromApi) }));
+}
+
+export function unarchiveLead(token: string, leadId: string) {
+  if (USE_MOCK) return mockApi.unarchiveLead(token, leadId);
+  return request<{ lead: ApiLead }>(`/leads/${leadId}/unarchive`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
+}
+
+// ── Logs de auditoria ─────────────────────────────────────────────────────────
+// O backend real (GET /audit) devolve registros do Prisma com um shape diferente
+// do AuditLogEntry usado na UI; este adaptador converte para o formato esperado.
+
+type ApiAuditRaw = {
+  id: string;
+  userId: string | null;
+  entityType: string;
+  entityId: string;
+  action: string;
+  changes: unknown;
+  createdAt: string;
+  user?: { name?: string; role?: { name?: string } | string | null } | null;
+};
+
+const auditActionMap: Record<string, AuditAction> = {
+  create: "lead_created",
+  update: "lead_status_changed",
+  update_status: "lead_status_changed",
+  assign: "lead_assigned",
+};
+
+function mapAuditFromApi(raw: ApiAuditRaw): AuditLogEntry {
+  const roleName =
+    typeof raw.user?.role === "string" ? raw.user?.role : raw.user?.role?.name ?? "—";
+  return {
+    id: raw.id,
+    action: auditActionMap[raw.action] ?? (raw.action as AuditAction),
+    actorId: raw.userId ?? "system",
+    actorName: raw.user?.name ?? "Sistema",
+    actorRole: roleName,
+    target: raw.entityId,
+    description: `${raw.action} em ${raw.entityType} ${raw.entityId}`,
+    createdAt: raw.createdAt,
+  };
+}
+
+export function listAuditLogs(token: string): Promise<{ logs: AuditLogEntry[] }> {
+  if (USE_MOCK) return mockApi.listAuditLogs(token);
+  return request<{ logs: ApiAuditRaw[] }>("/audit", {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ logs }) => ({ logs: logs.map(mapAuditFromApi) }));
+}

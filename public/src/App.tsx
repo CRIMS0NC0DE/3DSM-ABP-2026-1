@@ -21,6 +21,7 @@ import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import RelatoryPage from "./pages/RelatoryPage";
+import LogsPage from "./pages/LogsPage";
 
 export default function App() {
   return (
@@ -59,11 +60,12 @@ export default function App() {
               </Route>
               <Route element={<PermissionRoute permission="logs" />}>
                 <Route path="/logs" element={<LogsPage />} />
+                {/* Alias retrocompatível: /audit-logs aponta para a mesma tela de logs. */}
+                <Route path="/audit-logs" element={<LogsPage />} />
               </Route>
               <Route element={<PermissionRoute permission="relatorio" />}>
                 <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
               </Route>
-              <Route path="/audit-logs" element={<AdminLogsPage />} />
               <Route element={<PermissionRoute permission="detalhes_pagamento" />}>
                 <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
               </Route>
