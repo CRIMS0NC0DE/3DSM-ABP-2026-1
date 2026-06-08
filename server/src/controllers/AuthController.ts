@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-
 import type { AuthService } from "../services/AuthService";
 
 export class AuthController {
@@ -21,4 +20,3 @@ export class AuthController {
     });
   };
 }
-
