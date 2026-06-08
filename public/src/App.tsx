@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import PermissionRoute from "./components/Auth/PermissionRoute";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AuthenticatedLayout from "./components/Layouts/AuthenticatedLayout";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -12,12 +13,13 @@ import PaymentDetailsPage from "./pages/PaymentDetailsPage";
 import PointsPage from "./pages/PointsPage";
 import RegisterPage from "./pages/RegisterPage";
 import SettingsPage from "./pages/SettingsPage";
-import RelatoryPage from "./pages/RelatoryPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import SidebarPreviewPage from "./pages/SidebarPreviewPage";
 import CollaboratorsPage from "./pages/CollaboratorsPage";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
+import RelatoryPage from "./pages/RelatoryPage";
+import LogsPage from "./pages/LogsPage";
 
 export default function App() {
   return (
@@ -32,15 +34,37 @@ export default function App() {
             <Route index element={<SidebarPreviewPage />} />
           </Route>
           <Route path="/" element={<HomePage />} />
-          <Route element={<AuthenticatedLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/colaboradores" element={<CollaboratorsPage />} />
-            <Route path="/garagem" element={<GaragePage />} />
-            <Route path="/leads" element={<LeadsPage />} />
-            <Route path="/notificacoes" element={<NotificationsPage />} />
-            <Route path="/configuracoes" element={<SettingsPage />} />
-            <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
-            <Route path="/transacoes" element={<TransactionsPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AuthenticatedLayout />}>
+              <Route element={<PermissionRoute permission="dashboard" />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Route>
+              <Route path="/chat" element={<ChatPage />} />
+              <Route element={<PermissionRoute permission="garagem" />}>
+                <Route path="/garagem" element={<GaragePage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="leads" />}>
+                <Route path="/leads" element={<LeadsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="notificacoes" />}>
+                <Route path="/notificacoes" element={<NotificationsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="colaboradores" />}>
+                <Route path="/colaboradores" element={<CollaboratorsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="configuracoes" />}>
+                <Route path="/configuracoes" element={<SettingsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="logs" />}>
+                <Route path="/logs" element={<LogsPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="relatorio" />}>
+                <Route path="/relatorio-transacoes" element={<RelatoryPage />} />
+              </Route>
+              <Route element={<PermissionRoute permission="detalhes_pagamento" />}>
+                <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
+              </Route>
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

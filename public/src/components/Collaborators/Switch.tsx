@@ -20,7 +20,10 @@ export default function Switch({
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onChange(!checked);
+      }}
       className={classNames(
         "relative inline-flex h-6 w-11 items-center rounded-full border transition",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
@@ -36,4 +39,3 @@ export default function Switch({
     </button>
   );
 }
-

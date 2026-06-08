@@ -2,10 +2,10 @@ import type { MetricSummary, ChartDataPoint, TransactionData, PieDataPoint, Atte
 
 export const metricsService = {
   getSummary: (): MetricSummary[] => [
-    { id: "1", label: "Vendas Totais", value: "R$ 24.500", trendValue: "+12%", trend: "up", icon: "💰" },
-    { id: "2", label: "Novos Leads", value: "128", trendValue: "-3%", trend: "down", icon: "👥" },
-    { id: "3", label: "Taxa de Conversão", value: "18.2%", trendValue: "+7%", trend: "up", icon: "📈" },
-    { id: "4", label: "Ticket Médio", value: "R$ 1.250", trendValue: "estável", trend: "stable", icon: "🏷️" },
+    { id: "1", label: "Vendas Totais", value: "R$ 24.500", trendValue: "+12%", trend: "up", icon: "money" },
+    { id: "2", label: "Novos Leads", value: "128", trendValue: "-3%", trend: "down", icon: "leads" },
+    { id: "3", label: "Taxa de Conversão", value: "18.2%", trendValue: "+7%", trend: "up", icon: "conversion" },
+    { id: "4", label: "Ticket Médio", value: "R$ 1.250", trendValue: "estável", trend: "stable", icon: "ticket" },
   ],
 
   getRevenueData: (): ChartDataPoint[] => [

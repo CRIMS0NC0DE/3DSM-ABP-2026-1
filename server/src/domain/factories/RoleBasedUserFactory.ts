@@ -1,6 +1,26 @@
 import type { User } from "../entities/User";
 import { UserFactory, type UserCreationInput } from "./UserFactory";
 
+class ExplicitRoleUserFactory extends UserFactory {
+  canCreate(input: UserCreationInput): boolean {
+    return Boolean(input.explicitRole);
+  }
+
+  protected factoryMethod(input: UserCreationInput): User {
+    return {
+      id: input.id,
+      name: input.name,
+      email: input.email,
+      password: input.passwordHash,
+      roleId: "",
+      role: input.explicitRole ?? "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+}
+
 class GeneralManagerUserFactory extends UserFactory {
   canCreate(input: UserCreationInput): boolean {
     return input.hasGeneralManagerProfile;
@@ -9,10 +29,14 @@ class GeneralManagerUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "GERENTE_GERAL",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -25,10 +49,14 @@ class ManagerUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "GERENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -41,10 +69,14 @@ class AttendantUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
+      password: input.passwordHash,
+      roleId: "",
       role: "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -57,10 +89,14 @@ class DefaultUserFactory extends UserFactory {
   protected factoryMethod(input: UserCreationInput): User {
     return {
       id: input.id,
-      nome: input.nome,
+      name: input.name,
       email: input.email,
-      senhaHash: input.senhaHash,
-      role: "USUARIO",
+      password: input.passwordHash,
+      roleId: "",
+      role: "ATENDENTE",
+      teamId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   }
 }
@@ -70,6 +106,7 @@ export class RoleBasedUserFactory {
 
   constructor(
     factories: UserFactory[] = [
+      new ExplicitRoleUserFactory(),
       new GeneralManagerUserFactory(),
       new ManagerUserFactory(),
       new AttendantUserFactory(),

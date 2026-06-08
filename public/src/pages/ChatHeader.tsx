@@ -1,4 +1,4 @@
-import { useChat } from "./ChatContext";
+import { useChat } from "./chatState";
 
 export default function ChatHeader() {
   const { activeConversation } = useChat();

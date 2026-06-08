@@ -1,9 +1,12 @@
-import { User } from "../../domain/entities/User";
+import type { AuthenticatedUser } from "../../services/AuthService";
 
 declare global {
   namespace Express {
     interface Request {
-      authUser?: User;
+      authUser?: AuthenticatedUser;
+      userId?: string;
+      userRole?: string;
+      userTeamId?: string | null;
     }
   }
 }

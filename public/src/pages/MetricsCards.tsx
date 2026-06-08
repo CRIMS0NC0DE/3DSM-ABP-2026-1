@@ -1,3 +1,4 @@
+import DynamicIcon from "../components/UI/DynamicIcon";
 import type { MetricSummary } from "./index";
 
 export default function MetricsCards({ data }: { data: MetricSummary[] }) {
@@ -6,7 +7,7 @@ export default function MetricsCards({ data }: { data: MetricSummary[] }) {
       {data.map((item) => (
         <div key={item.id} className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-sm transition hover:border-slate-700">
           <div className="flex items-center justify-between">
-            <span className="text-2xl">{item.icon}</span>
+            <DynamicIcon name={item.icon} className="h-6 w-6 text-slate-400" />
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
               item.trend === 'up' ? 'bg-emerald-500/10 text-emerald-500' : 
               item.trend === 'down' ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-slate-400'

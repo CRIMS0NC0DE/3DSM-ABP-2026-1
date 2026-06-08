@@ -2,7 +2,19 @@ import type { PieDataPoint } from "./index";
 
 export default function LeadDistributionPie({ data }: { data: PieDataPoint[] }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
-  let cumulativePercent = 0;
+  const segments = data.map((item, index) => {
+    const previousTotal = data
+      .slice(0, index)
+      .reduce((sum, previousItem) => sum + previousItem.value, 0);
+    const percent = total > 0 ? (item.value / total) * 100 : 0;
+    const offset = total > 0 ? (previousTotal / total) * 100 : 0;
+
+    return {
+      ...item,
+      dashArray: `${percent} 100`,
+      dashOffset: -offset,
+    };
+  });
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-sm">
@@ -10,26 +22,20 @@ export default function LeadDistributionPie({ data }: { data: PieDataPoint[] }) 
       <div className="flex flex-col items-center gap-8 sm:flex-row">
         <div className="relative h-40 w-40">
           <svg viewBox="0 0 32 32" className="h-full w-full -rotate-90 rounded-full">
-            {data.map((item, index) => {
-              const percent = (item.value / total) * 100;
-              const dashArray = `${percent} 100`;
-              const dashOffset = -cumulativePercent;
-              cumulativePercent += percent;
-              return (
-                <circle
-                  key={index}
-                  cx="16"
-                  cy="16"
-                  r="16"
-                  fill="transparent"
-                  stroke={item.color}
-                  strokeWidth="6"
-                  strokeDasharray={dashArray}
-                  strokeDashoffset={dashOffset}
-                  className="transition-all duration-500"
-                />
-              );
-            })}
+            {segments.map((item, index) => (
+              <circle
+                key={index}
+                cx="16"
+                cy="16"
+                r="16"
+                fill="transparent"
+                stroke={item.color}
+                strokeWidth="6"
+                strokeDasharray={item.dashArray}
+                strokeDashoffset={item.dashOffset}
+                className="transition-all duration-500"
+              />
+            ))}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full">
             <span className="text-xl font-bold text-white">{total}</span>

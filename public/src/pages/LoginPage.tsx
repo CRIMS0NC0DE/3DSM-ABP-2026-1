@@ -4,18 +4,20 @@ import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
 import { getApiErrorMessage } from "../contexts/authState";
 import { useAuth } from "../contexts/useAuth";
+import { landingPathForRole } from "../components/Collaborators/types";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, user } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const fallbackPath = user ? landingPathForRole(user.role) : "/dashboard";
   const redirectTo =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/dashboard";
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || fallbackPath;
 
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;

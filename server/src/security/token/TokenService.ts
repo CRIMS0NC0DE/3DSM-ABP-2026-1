@@ -12,7 +12,7 @@ export interface GeneratedToken {
 }
 
 export interface TokenService {
-  generate(input: { userId: number; email: string; role: UserRole }): GeneratedToken;
+  generate(input: { userId: string; email: string; role: UserRole }): GeneratedToken;
   verify(token: string): JwtPayload;
 }
 

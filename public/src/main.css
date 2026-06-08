@@ -16,7 +16,11 @@
 
 /* 3. Melhore a renderização de texto e altura da página */
 html {
-  color-scheme: light dark; /* Suporte nativo a dark mode */
+  color-scheme: light;
+}
+
+body {
+  background-color: #f1f5f9; /* slate-100 — garante sem buracos escuros */
 }
 
 body {

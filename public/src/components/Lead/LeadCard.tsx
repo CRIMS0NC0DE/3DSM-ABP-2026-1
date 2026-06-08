@@ -1,62 +1,141 @@
-interface LeadProps {
-  name: string;
-  email: string;
-  interest: string;
-  phone: string;
-  states: "Novo" | "Em andamento" | "Fechado";
+const IMPORTANCE_STYLE = {
+  frio:   { label: "Frio",   bg: "#eff6ff", color: "#3b82f6", border: "#bfdbfe" },
+  morno:  { label: "Morno",  bg: "#fff7ed", color: "#f97316", border: "#fed7aa" },
+  quente: { label: "Quente", bg: "#fef2f2", color: "#ef4444", border: "#fecaca" },
+};
+
+const ORIGIN_LABELS: Record<string, string> = {
+  visita_loja: "Loja",
+  telefone:    "Telefone",
+  whatsapp:    "WhatsApp",
+  instagram:   "Instagram",
+  formulario:  "Formulário",
+  outro:       "Outro",
+};
+
+interface LeadCardProps {
+  clientName: string;
+  subject: string | null;
+  origin: string;
+  importance: "frio" | "morno" | "quente";
+  attendantName: string;
+  canDelegate: boolean;
+  onEdit?: () => void;
+  onDelegate?: () => void;
 }
 
-export default function LeadCard({ name, email, interest, phone, states }: LeadProps) {
-  function getStatusColor(status: string) {
-    switch (status) {
-      case "Novo":
-        return "before:bg-emerald-500 text-slate-700";
-      case "Em andamento":
-        return "before:bg-amber-500 text-slate-700";
-      case "Fechado":
-        return "before:bg-rose-500 text-slate-700";
-      default:
-        return "before:bg-slate-400 text-slate-700";
-    }
-  }
+export default function LeadCard({
+  clientName,
+  subject,
+  origin,
+  importance,
+  attendantName,
+  canDelegate,
+  onEdit,
+  onDelegate,
+}: LeadCardProps) {
+  const imp = IMPORTANCE_STYLE[importance] ?? IMPORTANCE_STYLE.morno;
+  const originLabel = ORIGIN_LABELS[origin] ?? origin;
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div>
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{name}</h2>
-            <p className="mt-1 text-sm text-slate-500">{interest}</p>
-          </div>
-          <span
-            className={`inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusColor(states)}`}
-          >
-            <span className="h-2.5 w-2.5 rounded-full" />
-            {states}
-          </span>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm select-none cursor-grab active:cursor-grabbing">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 px-3 pt-3 pb-1">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-800">{clientName}</p>
+          {subject && (
+            <p className="truncate text-[11px] text-slate-400 mt-0.5">{subject}</p>
+          )}
         </div>
-
-        <div className="space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
-          <p>
-            <span className="font-medium text-slate-800">Email:</span> {email}
-          </p>
-          <p>
-            <span className="font-medium text-slate-800">Telefone:</span> {phone}
-          </p>
-        </div>
+        <GripIcon />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <button className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-slate-800">
-          Ver detalhes
-        </button>
-        <button className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100">
-          Editar
-        </button>
-        <button className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
-          Excluir
-        </button>
+      {/* Badges */}
+      <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px] font-bold border"
+          style={{ background: imp.bg, color: imp.color, borderColor: imp.border }}
+        >
+          {imp.label}
+        </span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+          {originLabel}
+        </span>
       </div>
+
+      {/* Attendant */}
+      <div className="flex items-center gap-1 px-3 pb-2">
+        <PersonIcon />
+        <p className="truncate text-[11px] text-slate-400">{attendantName}</p>
+      </div>
+
+      {/* Actions */}
+      {(onEdit || (canDelegate && onDelegate)) && (
+        <div className="flex gap-1.5 px-2 pb-2">
+          {onEdit && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-blue-200 bg-blue-50 py-1.5 text-[11px] font-semibold text-blue-600 transition hover:bg-blue-100"
+            >
+              <PencilIcon />
+              Editar
+            </button>
+          )}
+          {canDelegate && onDelegate && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onDelegate(); }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-violet-200 bg-violet-50 py-1.5 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-100"
+            >
+              <DelegateIcon />
+              Delegar
+            </button>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function GripIcon() {
+  return (
+    <svg width="10" height="14" viewBox="0 0 10 14" fill="#cbd5e1" className="mt-0.5 shrink-0">
+      <circle cx="2.5" cy="2.5" r="1.2" />
+      <circle cx="7.5" cy="2.5" r="1.2" />
+      <circle cx="2.5" cy="7" r="1.2" />
+      <circle cx="7.5" cy="7" r="1.2" />
+      <circle cx="2.5" cy="11.5" r="1.2" />
+      <circle cx="7.5" cy="11.5" r="1.2" />
+    </svg>
+  );
+}
+
+function PersonIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function DelegateIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
   );
 }

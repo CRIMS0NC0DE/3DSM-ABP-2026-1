@@ -22,7 +22,10 @@ export function authenticate(authService: AuthService) {
     const payload = authService.verifyToken(token);
     const user = await authService.getUserFromTokenSubject(payload.sub);
 
-    request.authUser = user;
+    (request as any).authUser = user;
+    (request as any).userId = user.id;
+    (request as any).userRole = user.role;
+    (request as any).userTeamId = user.teamId ?? null;
     next();
   };
 }
