@@ -18,6 +18,7 @@ import DelegationManager from "../components/Lead/DelegationManager";
 import type { LeadFormData } from "../components/Lead/LeadForm";
 import { useAuth } from "../contexts/useAuth";
 import { useLeads } from "../hooks/useLeads";
+import { useNotifications } from "../contexts/NotificationContext";
 import type { ApiLead, AssignableUser } from "../hooks/useLeads";
 
 export type LeadStatus =
@@ -378,21 +379,7 @@ export default function LeadsPage() {
   const [archiveMsg, setArchiveMsg]         = useState<string | null>(null);
   const [viewArchived, setViewArchived]     = useState(false);
 
-  const {
-    leads,
-    archivedLeads,
-    assignableUsers,
-    loading,
-    loadingArchived,
-    error,
-    moveLead,
-    delegateLead,
-    addLead,
-    updateLead,
-    archiveLeads,
-    fetchArchived,
-    unarchiveLead,
-  } = useLeads({ paused: activeId !== null || viewArchived });
+  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead } = useLeads({ paused: activeId !== null });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -450,21 +437,25 @@ export default function LeadsPage() {
     const lead = leads.find((l) => l.id === active.id);
     if (!lead || lead.status === newStage) return;
     moveLead(lead.id, newStage);
+    notify({ title: "Status alterado", message: `Lead ${lead.clientName} movido para ${newStage}.`, level: "info" });
   }
 
   async function handleSaveLead(data: LeadFormData) {
     await addLead(data);
+    notify({ title: "Lead criado", message: "Lead cadastrado com sucesso.", level: "success" });
   }
 
   async function handleUpdateLead(data: LeadFormData) {
     if (!editingLead) return;
     await updateLead(editingLead.id, data);
     setEditingLead(null);
+    notify({ title: "Lead atualizado", message: "Dados do lead atualizados.", level: "success" });
   }
 
   async function handleDelegate(attendantId: string) {
     if (!delegatingLead) return;
     await delegateLead(delegatingLead.id, attendantId);
+    notify({ title: "Lead delegado", message: "Lead foi delegado com sucesso.", level: "success" });
   }
 
   async function handleUnarchive(lead: ApiLead) {

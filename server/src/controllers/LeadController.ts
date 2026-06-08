@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 
 import type { LeadService } from "../services/LeadService";
+import type { AuditLogService } from "../services/AuditLogService";
 
 export class LeadController {
-  constructor(private readonly leadService: LeadService) {}
+  constructor(private readonly leadService: LeadService, private readonly auditService?: AuditLogService) {}
 
   list = async (request: Request, response: Response): Promise<void> => {
     const actor = request.authUser!;
@@ -14,6 +15,15 @@ export class LeadController {
   create = async (request: Request, response: Response): Promise<void> => {
     const actor = request.authUser!;
     const lead = await this.leadService.createLead(actor, request.body);
+    if (this.auditService) {
+      await this.auditService.create({
+        userId: actor.id,
+        entityType: "lead",
+        entityId: lead.id,
+        action: "create",
+        changes: lead,
+      });
+    }
     response.status(201).json({ lead });
   };
 
@@ -21,6 +31,15 @@ export class LeadController {
     const actor  = request.authUser!;
     const leadId = String(request.params.id ?? "");
     const lead   = await this.leadService.updateLead(actor, leadId, request.body);
+    if (this.auditService) {
+      await this.auditService.create({
+        userId: actor.id,
+        entityType: "lead",
+        entityId: lead.id,
+        action: "update",
+        changes: request.body,
+      });
+    }
     response.status(200).json({ lead });
   };
 
@@ -28,6 +47,15 @@ export class LeadController {
     const actor = request.authUser!;
     const leadId = String(request.params.id ?? "");
     const lead = await this.leadService.updateStatus(actor, leadId, request.body);
+    if (this.auditService) {
+      await this.auditService.create({
+        userId: actor.id,
+        entityType: "lead",
+        entityId: lead.id,
+        action: "update_status",
+        changes: request.body,
+      });
+    }
     response.status(200).json({ lead });
   };
 
@@ -35,6 +63,15 @@ export class LeadController {
     const actor = request.authUser!;
     const leadId = String(request.params.id ?? "");
     const lead = await this.leadService.assignLead(actor, leadId, request.body);
+    if (this.auditService) {
+      await this.auditService.create({
+        userId: actor.id,
+        entityType: "lead",
+        entityId: lead.id,
+        action: "assign",
+        changes: request.body,
+      });
+    }
     response.status(200).json({ lead });
   };
 

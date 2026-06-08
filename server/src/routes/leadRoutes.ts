@@ -8,13 +8,15 @@ import type { AuthService } from "../services/AuthService";
 import { LeadService } from "../services/LeadService";
 import { PrismaLeadRepository } from "../repositories/PrismaLeadRepository";
 import { PrismaUserRepository } from "../repositories/PrismaUserRepository";
+import { AuditLogService } from "../services/AuditLogService";
 
 export function createLeadRoutes(authService: AuthService) {
   const router = Router();
   const leadRepository = new PrismaLeadRepository();
   const userRepository = new PrismaUserRepository();
   const leadService = new LeadService(leadRepository, userRepository);
-  const controller = new LeadController(leadService);
+  const auditService = new AuditLogService();
+  const controller = new LeadController(leadService, auditService);
 
   router.use(asyncHandler(authenticate(authService)));
 

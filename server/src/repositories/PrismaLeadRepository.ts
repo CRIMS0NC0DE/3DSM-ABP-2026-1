@@ -4,26 +4,13 @@ import type { LeadRepository } from "../domain/repositories/LeadRepository";
 
 const include = { attendant: { select: { id: true, name: true } } } as const;
 
-function toDomain(lead: {
-  id: string;
-  clientName: string;
-  clientPhone: string | null;
-  clientEmail: string | null;
-  subject: string | null;
-  origin: string;
-  importance: string;
-  status: string;
-  attendantId: string;
-  attendant: { name: string } | null;
-  createdAt: Date;
-  updatedAt: Date;
-}): Lead {
+function toDomain(lead: any): Lead {
   return {
     id: lead.id,
     clientName: lead.clientName,
-    clientPhone: lead.clientPhone,
-    clientEmail: lead.clientEmail,
-    subject: lead.subject,
+    clientPhone: lead.clientPhone ?? null,
+    clientEmail: lead.clientEmail ?? null,
+    subject: lead.subject ?? null,
     origin: lead.origin,
     importance: lead.importance as Lead["importance"],
     status: lead.status as LeadStatus,

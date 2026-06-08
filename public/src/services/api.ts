@@ -316,36 +316,3 @@ export function listAssignable(token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
-
-/** Arquiva em massa os leads finalizados (vendidos) ou perdidos, retirando-os do funil ativo. */
-export function archiveLeads(token: string) {
-  if (USE_MOCK) return mockApi.archiveLeads(token);
-  return request<{ message: string }>("/leads/archive", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
-/** Lista o histórico de leads arquivados (escopado pelo perfil no backend). */
-export function listArchivedLeads(token: string) {
-  if (USE_MOCK) return mockApi.listArchivedLeads(token);
-  return request<{ leads: ApiLead[] }>("/leads/archived", {
-    headers: { Authorization: `Bearer ${token}` },
-  }).then(({ leads }) => ({ leads: leads.map(mapLeadFromApi) }));
-}
-
-/** Devolve um lead arquivado ao funil ativo. */
-export function unarchiveLead(token: string, leadId: string) {
-  if (USE_MOCK) return mockApi.unarchiveLead(token, leadId);
-  return request<{ lead: ApiLead }>(`/leads/${leadId}/unarchive`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
-  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
-}
-
-export function listAuditLogs(token: string) {
-  if (USE_MOCK) return mockApi.listAuditLogs(token);
-  return request<{ logs: AuditLogEntry[] }>("/audit-logs", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}

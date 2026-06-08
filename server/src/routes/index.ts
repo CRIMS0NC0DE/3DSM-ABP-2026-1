@@ -8,6 +8,7 @@ import { TokenAuditDecorator } from "../security/token/TokenAuditDecorator";
 import { AuthService } from "../services/AuthService";
 import { createAuthRoutes } from "./authRoutes";
 import { createLeadRoutes } from "./leadRoutes";
+import { createCollaboratorRoutes } from "./collaboratorRoutes";
 
 export function createRouter() {
   const router = Router();
@@ -22,6 +23,7 @@ export function createRouter() {
 
   router.use("/auth", createAuthRoutes(authService));
   router.use("/leads", createLeadRoutes(authService));
+  router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService));
 
   return router;
 }
