@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 
+import { AppError } from "../errors/AppError";
 import type { AuthService } from "../services/AuthService";
 
 export class AuthController {

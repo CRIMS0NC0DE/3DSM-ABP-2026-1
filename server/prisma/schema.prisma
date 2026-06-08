@@ -64,6 +64,16 @@ model User {
 
 // ============ Business Models ============
 
+// Funil de vendas: padroniza os estagios do lead e evita erros de digitacao (Sprint 2).
+enum LeadStatus {
+  novo
+  em_atendimento
+  agendado
+  em_negociacao
+  convertido
+  perdido
+}
+
 model Lead {
   id              String       @id @default(cuid())
   attendantId     String
@@ -74,36 +84,44 @@ model Lead {
   clientCpf       String?
   origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
   importance      String       // frio, morno, quente
-  status          String       // novo, em_atendimento, convertido, perdido
+  status          LeadStatus   @default(novo)
+  archive         Boolean      @default(false) // leads finalizados/perdidos arquivados saem do funil ativo
   storeId         String?
-  
+
   subject            String?
   firstInteractionAt DateTime?
   externalId         String? @unique
 
-  
+
   negotiation     Negotiation?
-  
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@map("leads")
+  @@index([archive])
 }
 
-model Lead {
-  idLead     Int    @id @default(autoincrement())
-  idCliente  Int
-  idVendedor Int
-  idOrigem   Int
-  idCarro    Int
-  statusLead String
-  nomeLead   String
+model Negotiation {
+  id              String   @id @default(cuid())
 
-  cliente  Cliente    @relation(fields: [idCliente], references: [idCliente])
-  vendedor Vendedor   @relation(fields: [idVendedor], references: [idVendedor])
-  origem   OrigemLead @relation(fields: [idOrigem], references: [idOrigem])
-  carro    Carro      @relation(fields: [idCarro], references: [idCarro])
-  venda    Venda?
+  leadId          String   @unique
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  stage           String   // estagio atual da negociacao
+  status          String   // status atual da negociacao
+  importance      String   // frio, morno, quente
+  notes           String?
+
+  history         NegotiationHistory[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("negotiations")
 }
 
 model NegotiationHistory {

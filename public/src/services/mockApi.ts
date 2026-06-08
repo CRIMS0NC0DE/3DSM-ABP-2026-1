@@ -253,9 +253,47 @@ export async function getCurrentUser(token: string): Promise<{ user: LoginRespon
   return { user: { id: user.id, nome: user.nome, email: user.email, role: user.role, teamId: user.teamId } };
 }
 
+// Leads arquivados (status finalizado/perdido movidos para o arquivo) ficam fora do funil ativo.
+type MockLead = ApiLead & { archive?: boolean };
+
+const ARCHIVABLE_STATUSES = new Set(["Vendido", "Perdido"]);
+
 export async function listLeads(_token: string): Promise<{ leads: ApiLead[] }> {
   await delay(80);
-  return { leads: getLeads() };
+  const leads = getLeads().filter((l) => !(l as MockLead).archive);
+  return { leads };
+}
+
+export async function archiveLeads(token: string): Promise<{ message: string }> {
+  await delay();
+  if (!resolveToken(token)) throw new Error("Token inválido.");
+  const leads = getLeads() as MockLead[];
+  let count = 0;
+  for (const lead of leads) {
+    if (!lead.archive && ARCHIVABLE_STATUSES.has(lead.status)) {
+      lead.archive = true;
+      count += 1;
+    }
+  }
+  saveLeads(leads);
+  return { message: `${count} leads foram movidos para o arquivo.` };
+}
+
+export async function listArchivedLeads(_token: string): Promise<{ leads: ApiLead[] }> {
+  await delay(80);
+  const leads = (getLeads() as MockLead[]).filter((l) => l.archive);
+  return { leads };
+}
+
+export async function unarchiveLead(_token: string, leadId: string): Promise<{ lead: ApiLead }> {
+  await delay();
+  const leads = getLeads() as MockLead[];
+  const idx = leads.findIndex((l) => l.id === leadId);
+  if (idx === -1) throw new Error("Lead não encontrado.");
+  const lead = { ...leads[idx], archive: false, updatedAt: new Date().toISOString() };
+  leads[idx] = lead;
+  saveLeads(leads);
+  return { lead };
 }
 
 export async function createLead(

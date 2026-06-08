@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { LeadController } from "../controllers/LeadController";
 import { authenticate } from "../middlewares/authenticate";
+import { authorize } from "../middlewares/authorize";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import type { AuthService } from "../services/AuthService";
 import { LeadService } from "../services/LeadService";
@@ -15,14 +16,20 @@ export function createLeadRoutes(authService: AuthService) {
   const leadService = new LeadService(leadRepository, userRepository);
   const controller = new LeadController(leadService);
 
-  router.use(authenticate(authService));
+  router.use(asyncHandler(authenticate(authService)));
 
   router.get("/",            asyncHandler(controller.list));
+  router.get("/archived",    asyncHandler(controller.listArchived));
   router.post("/",           asyncHandler(controller.create));
   router.get("/assignable",  asyncHandler(controller.listAssignable));
   router.patch("/:id",        asyncHandler(controller.update));
   router.patch("/:id/status", asyncHandler(controller.updateStatus));
   router.patch("/:id/assign", asyncHandler(controller.assign));
+
+  // Limpeza do funil: apenas perfis de gestao podem arquivar leads finalizados/perdidos (RBAC).
+  router.post("/archive", authorize("ADMIN", "GERENTE_GERAL", "GERENTE"), asyncHandler(controller.archive));
+  // Devolver um lead arquivado ao funil ativo (mesma restricao do arquivamento).
+  router.patch("/:id/unarchive", authorize("ADMIN", "GERENTE_GERAL", "GERENTE"), asyncHandler(controller.unarchive));
 
   return router;
 }

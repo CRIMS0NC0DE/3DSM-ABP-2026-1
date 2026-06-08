@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -53,12 +53,14 @@ function DraggableCard({
   canDelegate,
   onEdit,
   onDelegate,
+  onUnarchive,
 }: {
   lead: ApiLead;
   canDrag: boolean;
   canDelegate: boolean;
-  onEdit: () => void;
-  onDelegate: () => void;
+  onEdit?: () => void;
+  onDelegate?: () => void;
+  onUnarchive?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lead.id,
@@ -70,7 +72,7 @@ function DraggableCard({
       ref={setNodeRef}
       {...(canDrag ? listeners : {})}
       {...(canDrag ? attributes : {})}
-      className={`touch-none outline-none ${isDragging ? "opacity-30" : ""} ${!canDrag ? "cursor-not-allowed" : ""}`}
+      className={`touch-none outline-none ${isDragging ? "opacity-30" : ""} ${!canDrag ? "cursor-default" : ""}`}
     >
       <LeadCard
         clientName={lead.clientName}
@@ -81,6 +83,7 @@ function DraggableCard({
         canDelegate={canDelegate}
         onEdit={onEdit}
         onDelegate={onDelegate}
+        onUnarchive={onUnarchive}
       />
     </div>
   );
@@ -93,21 +96,26 @@ function KanbanColumn({
   canDelegate,
   currentUserId,
   currentUserRole,
+  archivedView,
   onEdit,
   onDelegate,
+  onUnarchive,
 }: {
   stage: LeadStatus;
   leads: ApiLead[];
   canDelegate: boolean;
   currentUserId: string;
   currentUserRole: string;
+  archivedView: boolean;
   onEdit: (lead: ApiLead) => void;
   onDelegate: (lead: ApiLead) => void;
+  onUnarchive?: (lead: ApiLead) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage });
+  const { setNodeRef, isOver } = useDroppable({ id: stage, disabled: archivedView });
   const { color, bg } = STAGE_META[stage];
 
   function canDragLead(lead: ApiLead): boolean {
+    if (archivedView) return false;
     if (currentUserRole !== "ATENDENTE") return true;
     return lead.attendantId === currentUserId;
   }
@@ -146,21 +154,24 @@ function KanbanColumn({
             key={lead.id}
             lead={lead}
             canDrag={canDragLead(lead)}
-            canDelegate={canDelegate}
-            onEdit={() => onEdit(lead)}
-            onDelegate={() => onDelegate(lead)}
+            canDelegate={archivedView ? false : canDelegate}
+            onEdit={archivedView ? undefined : () => onEdit(lead)}
+            onDelegate={archivedView ? undefined : () => onDelegate(lead)}
+            onUnarchive={archivedView && onUnarchive ? () => onUnarchive(lead) : undefined}
           />
         ))}
 
-        <div
-          className={`mt-auto flex items-center justify-center rounded-xl border-2 border-dashed py-4 text-[11px] transition-colors duration-150 ${
-            isOver
-              ? "border-blue-300 text-blue-400 bg-blue-50"
-              : "border-slate-200 text-slate-300"
-          }`}
-        >
-          {isOver ? "Soltar aqui" : "+ Soltar card"}
-        </div>
+        {!archivedView && (
+          <div
+            className={`mt-auto flex items-center justify-center rounded-xl border-2 border-dashed py-4 text-[11px] transition-colors duration-150 ${
+              isOver
+                ? "border-blue-300 text-blue-400 bg-blue-50"
+                : "border-slate-200 text-slate-300"
+            }`}
+          >
+            {isOver ? "Soltar aqui" : "+ Soltar card"}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -363,8 +374,25 @@ export default function LeadsPage() {
   const [editingLead, setEditingLead]       = useState<ApiLead | null>(null);
   const [delegatingLead, setDelegatingLead] = useState<ApiLead | null>(null);
   const [activeId, setActiveId]             = useState<string | null>(null);
+  const [archiving, setArchiving]           = useState(false);
+  const [archiveMsg, setArchiveMsg]         = useState<string | null>(null);
+  const [viewArchived, setViewArchived]     = useState(false);
 
-  const { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead } = useLeads({ paused: activeId !== null });
+  const {
+    leads,
+    archivedLeads,
+    assignableUsers,
+    loading,
+    loadingArchived,
+    error,
+    moveLead,
+    delegateLead,
+    addLead,
+    updateLead,
+    archiveLeads,
+    fetchArchived,
+    unarchiveLead,
+  } = useLeads({ paused: activeId !== null || viewArchived });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -372,17 +400,26 @@ export default function LeadsPage() {
 
   const canDelegate = user?.role === "ADMIN" || user?.role === "GERENTE_GERAL" || user?.role === "GERENTE";
   const canCreate   = user?.role !== "GERENTE_GERAL";
+  // Mesmos perfis autorizados pelo authorize() da rota POST /leads/archive no backend.
+  const canArchive  = user?.role === "ADMIN" || user?.role === "GERENTE_GERAL" || user?.role === "GERENTE";
+
+  // Recarrega o histórico de arquivados sempre que o usuário entra nessa visão.
+  useEffect(() => {
+    if (viewArchived) fetchArchived();
+  }, [viewArchived, fetchArchived]);
+
+  const sourceLeads = viewArchived ? archivedLeads : leads;
 
   const visibleLeads = useMemo(() => {
     if (user?.role === "ATENDENTE") {
-      return leads.filter((l) => l.attendantId === user.id);
+      return sourceLeads.filter((l) => l.attendantId === user.id);
     }
     if (user?.role === "GERENTE") {
       const teamIds = new Set(assignableUsers.map((u) => u.id));
-      return leads.filter((l) => teamIds.has(l.attendantId) || l.attendantId === user.id);
+      return sourceLeads.filter((l) => teamIds.has(l.attendantId) || l.attendantId === user.id);
     }
-    return leads;
-  }, [leads, assignableUsers, user?.role, user?.id]);
+    return sourceLeads;
+  }, [sourceLeads, assignableUsers, user?.role, user?.id]);
 
   const leadsByStage = useMemo(() => {
     const grouped = {} as Record<LeadStatus, ApiLead[]>;
@@ -408,7 +445,7 @@ export default function LeadsPage() {
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     setActiveId(null);
-    if (!over) return;
+    if (viewArchived || !over) return;
     const newStage = over.id as LeadStatus;
     const lead = leads.find((l) => l.id === active.id);
     if (!lead || lead.status === newStage) return;
@@ -428,6 +465,34 @@ export default function LeadsPage() {
   async function handleDelegate(attendantId: string) {
     if (!delegatingLead) return;
     await delegateLead(delegatingLead.id, attendantId);
+  }
+
+  async function handleUnarchive(lead: ApiLead) {
+    const confirmed = window.confirm(`Devolver "${lead.clientName}" ao funil ativo?`);
+    if (!confirmed) return;
+    try {
+      await unarchiveLead(lead.id);
+    } catch (e) {
+      setArchiveMsg(e instanceof Error ? e.message : "Não foi possível desarquivar o lead.");
+    }
+  }
+
+  async function handleArchive() {
+    const finalized = closedLeads + leadsByStage["Perdido"].length;
+    const confirmed = window.confirm(
+      `Arquivar ${finalized} lead(s) finalizado(s) ou perdido(s)? Eles sairão do funil ativo.`,
+    );
+    if (!confirmed) return;
+    setArchiving(true);
+    setArchiveMsg(null);
+    try {
+      const message = await archiveLeads();
+      setArchiveMsg(message);
+    } catch (e) {
+      setArchiveMsg(e instanceof Error ? e.message : "Não foi possível arquivar os leads.");
+    } finally {
+      setArchiving(false);
+    }
   }
 
   if (loading) {
@@ -462,7 +527,9 @@ export default function LeadsPage() {
           <div className="flex items-center gap-6">
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">CRM de Vendas</p>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">Pipeline de Leads</h1>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">
+                {viewArchived ? "Leads Arquivados" : "Pipeline de Leads"}
+              </h1>
             </div>
             <div className="hidden sm:flex items-center gap-4 text-xs text-slate-500">
               <Stat label="Total"    value={totalLeads}    color="#64748b" />
@@ -471,15 +538,55 @@ export default function LeadsPage() {
               <Stat label="Fechados" value={closedLeads}   color="#10b981" />
             </div>
           </div>
-          {canCreate && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setShowLeadForm(true)}
-              className="rounded-xl bg-[#b81414] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#9f1313] shrink-0"
+              onClick={() => { setViewArchived((v) => !v); setArchiveMsg(null); }}
+              title={viewArchived ? "Voltar ao funil ativo" : "Consultar leads arquivados"}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                viewArchived
+                  ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+              }`}
             >
-              + Novo Lead
+              {viewArchived ? "← Funil ativo" : "Ver arquivados"}
             </button>
-          )}
+            {!viewArchived && canArchive && (
+              <button
+                onClick={handleArchive}
+                disabled={archiving}
+                title="Move leads vendidos ou perdidos para o arquivo"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+              >
+                {archiving ? "Arquivando..." : "Arquivar finalizados"}
+              </button>
+            )}
+            {!viewArchived && canCreate && (
+              <button
+                onClick={() => setShowLeadForm(true)}
+                className="rounded-xl bg-[#b81414] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#9f1313]"
+              >
+                + Novo Lead
+              </button>
+            )}
+          </div>
         </div>
+
+        {archiveMsg && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 shrink-0">
+            <span>{archiveMsg}</span>
+            <button onClick={() => setArchiveMsg(null)} className="text-emerald-600 transition hover:text-emerald-900" aria-label="Fechar aviso">✕</button>
+          </div>
+        )}
+
+        {viewArchived && (
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-500 shrink-0">
+            {loadingArchived
+              ? "Carregando arquivados..."
+              : totalLeads === 0
+                ? "Nenhum lead arquivado por aqui."
+                : `${totalLeads} lead(s) arquivado(s). Use “Desarquivar” para devolver ao funil ativo.`}
+          </div>
+        )}
 
         {/* Kanban board */}
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -493,8 +600,10 @@ export default function LeadsPage() {
                   canDelegate={canDelegate}
                   currentUserId={user?.id ?? ""}
                   currentUserRole={user?.role ?? ""}
+                  archivedView={viewArchived}
                   onEdit={setEditingLead}
                   onDelegate={setDelegatingLead}
+                  onUnarchive={canArchive ? handleUnarchive : undefined}
                 />
               ))}
             </div>
