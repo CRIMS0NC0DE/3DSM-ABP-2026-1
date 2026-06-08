@@ -11,6 +11,7 @@ import { createAuthRoutes } from "./authRoutes";
 import { createRbacRoutes } from "./rbacRoutes";
 import { createLeadRoutes } from "./leadRoutes";
 import { createCollaboratorRoutes } from "./collaboratorRoutes";
+import { createAuditRoutes } from "./auditRoutes";
 
 export function createRouter() {
   const router = Router();
@@ -27,6 +28,7 @@ export function createRouter() {
   router.use("/auth", createAuthRoutes(authService));
   router.use("/rbac", createRbacRoutes(authService));
   router.use("/leads", createLeadRoutes(authService));
+  router.use("/audit-logs", createAuditRoutes(authService));
   router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService));
 
   return router;
