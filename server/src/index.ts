@@ -11,7 +11,15 @@ import { createRouter } from "./routes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3002";
+
+// Origens de dev liberadas: front em Docker (3002) e Vite nativo (5173).
+const allowedOrigins = Array.from(
+  new Set([
+    process.env.FRONTEND_URL || "http://localhost:3002",
+    "http://localhost:3002",
+    "http://localhost:5173",
+  ]),
+);
 
 prisma.$connect().catch((error: Error) => {
   console.error("Falha ao conectar no banco:", error);
@@ -20,7 +28,13 @@ prisma.$connect().catch((error: Error) => {
 
 app.use(
   cors({
-    origin: frontendUrl,
+    // Array faz o pacote cors refletir a origem da requisicao quando permitida.
+    // Sem `origin` (curl, health-check) tambem e liberado.
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`Origin nao permitida pelo CORS: ${origin}`));
+    },
+    credentials: true,
   }),
 );
 app.use(express.json());
