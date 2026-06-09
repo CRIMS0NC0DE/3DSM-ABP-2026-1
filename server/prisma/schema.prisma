@@ -156,3 +156,61 @@ model AuditLog {
   @@index([userId])
   @@index([entityType, entityId])
 }
+
+enum DocumentType {
+  File
+  Link
+}
+
+enum DocumentVisibility {
+  private
+  public
+}
+
+enum FinanceEntryType {
+  income
+  expense
+}
+
+model Document {
+  id               String             @id @default(cuid())
+  companyId        String
+  title            String
+  description      String?
+  type             DocumentType
+  url              String?
+  storedFileName   String?
+  originalFileName String?
+  contentType      String?
+  sizeBytes        Int?
+  sector           String?
+  tagsJson         Json?
+  isOnboarding     Boolean            @default(false)
+  visibility       DocumentVisibility @default(private)
+  createdAtUtc     DateTime           @default(now())
+  updatedAtUtc     DateTime           @updatedAt
+
+  @@map("documents")
+  @@index([companyId])
+  @@index([companyId, visibility])
+  @@index([companyId, sector])
+}
+
+model FinanceEntry {
+  id                 String           @id @default(cuid())
+  companyId          String
+  occurredAtUtc      DateTime
+  type               FinanceEntryType
+  category           String
+  amount             Decimal          @db.Decimal(12, 2)
+  currency           String           @default("BRL")
+  notes              String?
+  attachmentFileName String?
+  createdAtUtc       DateTime         @default(now())
+  updatedAtUtc       DateTime         @updatedAt
+
+  @@map("finance_entries")
+  @@index([companyId])
+  @@index([companyId, occurredAtUtc])
+  @@index([companyId, type])
+}

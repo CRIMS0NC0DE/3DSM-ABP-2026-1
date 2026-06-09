@@ -11,6 +11,9 @@ import { createAuthRoutes } from "./authRoutes";
 import { createLeadRoutes } from "./leadRoutes";
 import { createCollaboratorRoutes } from "./collaboratorRoutes";
 import { createAuditRoutes } from "./auditRoutes";
+import { AuditLogService } from "../services/AuditLogService";
+import { createDocumentRoutes } from "./documentRoutes";
+import { createFinanceRoutes } from "./financeRoutes";
 
 export function createRouter() {
   const router = Router();
@@ -29,6 +32,8 @@ export function createRouter() {
   router.use("/leads", createLeadRoutes(authService));
   router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService, auditService));
   router.use("/audit", createAuditRoutes(authService));
+  router.use("/documentos", createDocumentRoutes(authService));
+  router.use("/finance", createFinanceRoutes(authService));
 
   return router;
 }
