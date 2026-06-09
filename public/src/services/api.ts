@@ -55,6 +55,7 @@ export type AuditAction =
   | "lead_status_changed"   // mudança de status
   | "lead_assigned"         // delegação de lead
   | "collaborator_created"  // novo colaborador
+  | "collaborator_updated"  // edição de colaborador
   | "collaborator_deleted"  // exclusão de colaborador
   | "role_changed"          // alteração de cargo
   | "permission_changed"    // alteração de permissão
@@ -365,17 +366,57 @@ const auditActionMap: Record<string, AuditAction> = {
   assign: "lead_assigned",
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getCollaboratorFromAuditChanges(changes: unknown): Partial<ApiCollaboratorRaw> | null {
+  if (!isRecord(changes)) return null;
+  const collaborator = changes.collaborator;
+  return isRecord(collaborator) ? collaborator : null;
+}
+
+function mapAuditAction(raw: ApiAuditRaw): AuditAction {
+  if (raw.entityType === "collaborator") {
+    if (raw.action === "create") return "collaborator_created";
+    if (raw.action === "update") return "collaborator_updated";
+    if (raw.action === "delete") return "collaborator_deleted";
+  }
+
+  return auditActionMap[raw.action] ?? (raw.action as AuditAction);
+}
+
+function buildAuditTarget(raw: ApiAuditRaw): string {
+  const collaborator = getCollaboratorFromAuditChanges(raw.changes);
+  if (collaborator?.name) return String(collaborator.name);
+  if (collaborator?.email) return String(collaborator.email);
+  return raw.entityId;
+}
+
+function buildAuditDescription(raw: ApiAuditRaw, action: AuditAction): string {
+  const target = buildAuditTarget(raw);
+
+  if (raw.entityType === "collaborator") {
+    if (action === "collaborator_created") return `Criou o colaborador ${target}.`;
+    if (action === "collaborator_updated") return `Alterou os dados do colaborador ${target}.`;
+    if (action === "collaborator_deleted") return `Excluiu o colaborador ${target}.`;
+  }
+
+  return `${raw.action} em ${raw.entityType} ${raw.entityId}`;
+}
+
 function mapAuditFromApi(raw: ApiAuditRaw): AuditLogEntry {
   const roleName =
     typeof raw.user?.role === "string" ? raw.user?.role : raw.user?.role?.name ?? "—";
+  const action = mapAuditAction(raw);
   return {
     id: raw.id,
-    action: auditActionMap[raw.action] ?? (raw.action as AuditAction),
+    action,
     actorId: raw.userId ?? "system",
     actorName: raw.user?.name ?? "Sistema",
     actorRole: roleName,
-    target: raw.entityId,
-    description: `${raw.action} em ${raw.entityType} ${raw.entityId}`,
+    target: buildAuditTarget(raw),
+    description: buildAuditDescription(raw, action),
     createdAt: raw.createdAt,
   };
 }

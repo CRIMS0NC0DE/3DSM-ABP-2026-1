@@ -3,12 +3,17 @@ import { Router } from "express";
 import { CollaboratorController } from "../controllers/CollaboratorController";
 import { authenticate } from "../middlewares/authenticate";
 import { asyncHandler } from "../middlewares/asyncHandler";
+import type { AuditLogService } from "../services/AuditLogService";
 import type { AuthService } from "../services/AuthService";
 import type { CollaboratorService } from "../services/CollaboratorService";
 
-export function createCollaboratorRoutes(authService: AuthService, collaboratorService: CollaboratorService) {
+export function createCollaboratorRoutes(
+  authService: AuthService,
+  collaboratorService: CollaboratorService,
+  auditService?: AuditLogService,
+) {
   const router = Router();
-  const controller = new CollaboratorController(collaboratorService);
+  const controller = new CollaboratorController(collaboratorService, auditService);
 
   router.use(asyncHandler(authenticate(authService)));
   router.get("/", asyncHandler(controller.list));

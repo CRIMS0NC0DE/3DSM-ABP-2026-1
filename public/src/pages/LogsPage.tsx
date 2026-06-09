@@ -17,6 +17,7 @@ const ACTION_META: Record<AuditAction, { label: string; badge: string; dot: stri
   lead_status_changed: { label: "Mudança de status",  badge: "bg-blue-50 text-blue-700 border-blue-200",          dot: "bg-blue-500" },
   lead_assigned:       { label: "Delegação de lead",  badge: "bg-cyan-50 text-cyan-700 border-cyan-200",          dot: "bg-cyan-500" },
   collaborator_created:{ label: "Novo colaborador",   badge: "bg-violet-50 text-violet-700 border-violet-200",    dot: "bg-violet-500" },
+  collaborator_updated:{ label: "Alteração de colaborador", badge: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
   collaborator_deleted:{ label: "Exclusão de colaborador", badge: "bg-red-50 text-red-700 border-red-200",         dot: "bg-red-600" },
   role_changed:        { label: "Alteração de cargo", badge: "bg-amber-50 text-amber-700 border-amber-200",       dot: "bg-amber-500" },
   permission_changed:  { label: "Alteração de permissão", badge: "bg-rose-50 text-rose-700 border-rose-200",      dot: "bg-rose-500" },

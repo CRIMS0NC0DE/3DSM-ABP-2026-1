@@ -19,6 +19,7 @@ export function createRouter() {
   const tokenService = new TokenAuditDecorator(new JwtTokenService());
   const authService = new AuthService(userRepository, passwordHasher, tokenService);
   const collaboratorService = new CollaboratorService(passwordHasher);
+  const auditService = new AuditLogService();
 
   router.get("/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
@@ -26,7 +27,7 @@ export function createRouter() {
 
   router.use("/auth", createAuthRoutes(authService));
   router.use("/leads", createLeadRoutes(authService));
-  router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService));
+  router.use("/collaborators", createCollaboratorRoutes(authService, collaboratorService, auditService));
   router.use("/audit", createAuditRoutes(authService));
 
   return router;

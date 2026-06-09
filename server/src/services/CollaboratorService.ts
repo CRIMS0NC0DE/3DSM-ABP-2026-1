@@ -99,10 +99,13 @@ export class CollaboratorService {
     return this.toResponse(updated);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<CollaboratorResponse> {
     const current = await prisma.user.findUnique({
       where: { id },
-      include: { _count: { select: { leads: true } } },
+      include: {
+        role: true,
+        _count: { select: { leads: true } },
+      },
     });
 
     if (!current) throw new AppError("Colaborador nao encontrado.", 404);
@@ -116,7 +119,9 @@ export class CollaboratorService {
       );
     }
 
+    const deletedCollaborator = this.toResponse(current);
     await prisma.user.delete({ where: { id } });
+    return deletedCollaborator;
   }
 
   private toResponse(collaborator: PrismaCollaborator): CollaboratorResponse {
