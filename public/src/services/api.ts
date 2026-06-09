@@ -49,6 +49,31 @@ export interface AssignableUser {
   role: string;
 }
 
+/** Tipos de ação registrados na auditoria. */
+export type AuditAction =
+  | "lead_created"          // captação de lead
+  | "lead_status_changed"   // mudança de status
+  | "lead_assigned"         // delegação de lead
+  | "collaborator_created"  // novo colaborador
+  | "collaborator_updated"  // edição de colaborador
+  | "collaborator_deleted"  // exclusão de colaborador
+  | "role_changed"          // alteração de cargo
+  | "permission_changed"    // alteração de permissão
+  | "login";                // acesso ao sistema
+
+export interface AuditLogEntry {
+  id: string;
+  action: AuditAction;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  /** Alvo da ação (nome do lead, colaborador etc.). */
+  target: string;
+  /** Descrição legível do que aconteceu. */
+  description: string;
+  createdAt: string;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const statusAliasesToApi: Record<string, string> = {
@@ -212,6 +237,14 @@ export async function updateCollaborator(
   return { collaborator: mapCollaborator(raw.collaborator) };
 }
 
+export function deleteCollaborator(token: string, id: string) {
+  if (USE_MOCK) return mockApi.deleteCollaborator(token, id);
+  return request<{ success: boolean }>(`/collaborators/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export function listLeads(token: string) {
   if (USE_MOCK) return mockApi.listLeads(token);
   return request<{ leads: ApiLead[] }>("/leads", {
@@ -285,8 +318,112 @@ export function listAssignable(token: string) {
   });
 }
 
-export function listAuditLogs(token: string) {
-  return request<{ logs: unknown[] }>("/audit-logs", {
+// ── Arquivamento de leads ─────────────────────────────────────────────────────
+// Espelha as rotas POST /leads/archive, GET /leads/archived e PATCH /leads/:id/unarchive.
+
+export function archiveLeads(token: string) {
+  if (USE_MOCK) return mockApi.archiveLeads(token);
+  return request<{ message: string }>("/leads/archive", {
+    method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+export function listArchivedLeads(token: string) {
+  if (USE_MOCK) return mockApi.listArchivedLeads(token);
+  return request<{ leads: ApiLead[] }>("/leads/archived", {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ leads }) => ({ leads: leads.map(mapLeadFromApi) }));
+}
+
+export function unarchiveLead(token: string, leadId: string) {
+  if (USE_MOCK) return mockApi.unarchiveLead(token, leadId);
+  return request<{ lead: ApiLead }>(`/leads/${leadId}/unarchive`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ lead }) => ({ lead: mapLeadFromApi(lead) }));
+}
+
+// ── Logs de auditoria ─────────────────────────────────────────────────────────
+// O backend real (GET /audit) devolve registros do Prisma com um shape diferente
+// do AuditLogEntry usado na UI; este adaptador converte para o formato esperado.
+
+type ApiAuditRaw = {
+  id: string;
+  userId: string | null;
+  entityType: string;
+  entityId: string;
+  action: string;
+  changes: unknown;
+  createdAt: string;
+  user?: { name?: string; role?: { name?: string } | string | null } | null;
+};
+
+const auditActionMap: Record<string, AuditAction> = {
+  create: "lead_created",
+  update: "lead_status_changed",
+  update_status: "lead_status_changed",
+  assign: "lead_assigned",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getCollaboratorFromAuditChanges(changes: unknown): Partial<ApiCollaboratorRaw> | null {
+  if (!isRecord(changes)) return null;
+  const collaborator = changes.collaborator;
+  return isRecord(collaborator) ? collaborator : null;
+}
+
+function mapAuditAction(raw: ApiAuditRaw): AuditAction {
+  if (raw.entityType === "collaborator") {
+    if (raw.action === "create") return "collaborator_created";
+    if (raw.action === "update") return "collaborator_updated";
+    if (raw.action === "delete") return "collaborator_deleted";
+  }
+
+  return auditActionMap[raw.action] ?? (raw.action as AuditAction);
+}
+
+function buildAuditTarget(raw: ApiAuditRaw): string {
+  const collaborator = getCollaboratorFromAuditChanges(raw.changes);
+  if (collaborator?.name) return String(collaborator.name);
+  if (collaborator?.email) return String(collaborator.email);
+  return raw.entityId;
+}
+
+function buildAuditDescription(raw: ApiAuditRaw, action: AuditAction): string {
+  const target = buildAuditTarget(raw);
+
+  if (raw.entityType === "collaborator") {
+    if (action === "collaborator_created") return `Criou o colaborador ${target}.`;
+    if (action === "collaborator_updated") return `Alterou os dados do colaborador ${target}.`;
+    if (action === "collaborator_deleted") return `Excluiu o colaborador ${target}.`;
+  }
+
+  return `${raw.action} em ${raw.entityType} ${raw.entityId}`;
+}
+
+function mapAuditFromApi(raw: ApiAuditRaw): AuditLogEntry {
+  const roleName =
+    typeof raw.user?.role === "string" ? raw.user?.role : raw.user?.role?.name ?? "—";
+  const action = mapAuditAction(raw);
+  return {
+    id: raw.id,
+    action,
+    actorId: raw.userId ?? "system",
+    actorName: raw.user?.name ?? "Sistema",
+    actorRole: roleName,
+    target: buildAuditTarget(raw),
+    description: buildAuditDescription(raw, action),
+    createdAt: raw.createdAt,
+  };
+}
+
+export function listAuditLogs(token: string): Promise<{ logs: AuditLogEntry[] }> {
+  if (USE_MOCK) return mockApi.listAuditLogs(token);
+  return request<{ logs: ApiAuditRaw[] }>("/audit", {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ logs }) => ({ logs: logs.map(mapAuditFromApi) }));
 }

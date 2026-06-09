@@ -3,9 +3,9 @@
  * All function signatures match api.ts exactly so callers need no changes.
  */
 import type { LoginResponse, AuthUser } from "../types/auth";
-import type { ApiLead, AssignableUser } from "./api";
+import type { ApiLead, AssignableUser, AuditLogEntry } from "./api";
 import type { Collaborator } from "../components/Collaborators/types";
-import { buildDefaultPermissoes, TEAMS as TEAM_DEFS } from "../components/Collaborators/types";
+import { buildDefaultPermissoes, canDeleteCollaborator, TEAMS as TEAM_DEFS } from "../components/Collaborators/types";
 import csvRaw from "../data/leads.csv?raw";
 
 // ── Teams ────────────────────────────────────────────────────────────────────
@@ -253,9 +253,47 @@ export async function getCurrentUser(token: string): Promise<{ user: LoginRespon
   return { user: { id: user.id, nome: user.nome, email: user.email, role: user.role, teamId: user.teamId } };
 }
 
+// Leads arquivados (status finalizado/perdido movidos para o arquivo) ficam fora do funil ativo.
+type MockLead = ApiLead & { archive?: boolean };
+
+const ARCHIVABLE_STATUSES = new Set(["Vendido", "Perdido"]);
+
 export async function listLeads(_token: string): Promise<{ leads: ApiLead[] }> {
   await delay(80);
-  return { leads: getLeads() };
+  const leads = getLeads().filter((l) => !(l as MockLead).archive);
+  return { leads };
+}
+
+export async function archiveLeads(token: string): Promise<{ message: string }> {
+  await delay();
+  if (!resolveToken(token)) throw new Error("Token inválido.");
+  const leads = getLeads() as MockLead[];
+  let count = 0;
+  for (const lead of leads) {
+    if (!lead.archive && ARCHIVABLE_STATUSES.has(lead.status)) {
+      lead.archive = true;
+      count += 1;
+    }
+  }
+  saveLeads(leads);
+  return { message: `${count} leads foram movidos para o arquivo.` };
+}
+
+export async function listArchivedLeads(_token: string): Promise<{ leads: ApiLead[] }> {
+  await delay(80);
+  const leads = (getLeads() as MockLead[]).filter((l) => l.archive);
+  return { leads };
+}
+
+export async function unarchiveLead(_token: string, leadId: string): Promise<{ lead: ApiLead }> {
+  await delay();
+  const leads = getLeads() as MockLead[];
+  const idx = leads.findIndex((l) => l.id === leadId);
+  if (idx === -1) throw new Error("Lead não encontrado.");
+  const lead = { ...leads[idx], archive: false, updatedAt: new Date().toISOString() };
+  leads[idx] = lead;
+  saveLeads(leads);
+  return { lead };
 }
 
 export async function createLead(
@@ -362,6 +400,137 @@ export function resetMockDb(): void {
   localStorage.removeItem(LS_LEADS_KEY);
   localStorage.removeItem(LS_COLLABORATORS_KEY);
   localStorage.removeItem(LS_PASSWORDS_KEY);
+  localStorage.removeItem(LS_AUDIT_KEY);
+}
+
+// ── Audit log store ───────────────────────────────────────────────────────────
+
+const LS_AUDIT_KEY = "mock_audit_logs_v2";
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN:         "Administrador",
+  GERENTE_GERAL: "Gerente Geral",
+  GERENTE:       "Gerente",
+  ATENDENTE:     "Vendedor",
+};
+
+/** Gera entradas de auditoria realistas a partir dos leads e colaboradores mock. */
+function seedAuditLogs(): AuditLogEntry[] {
+  const logs: AuditLogEntry[] = [];
+  const leads = getLeads();
+  const cols  = getMockCollaborators();
+  const admin = cols.find((c) => c.role === "ADMIN") ?? cols[0];
+  const gg    = cols.find((c) => c.role === "GERENTE_GERAL");
+
+  const push = (
+    action: AuditLogEntry["action"],
+    actor: { id: string; nome: string; role: string },
+    target: string,
+    description: string,
+    when: string,
+  ) => {
+    logs.push({
+      id:        `audit-${logs.length + 1}`,
+      action,
+      actorId:   actor.id,
+      actorName: actor.nome,
+      actorRole: ROLE_LABEL[actor.role] ?? actor.role,
+      target,
+      description,
+      createdAt: when,
+    });
+  };
+
+  // A partir dos leads: captação e mudança de status
+  leads.slice(0, 40).forEach((lead, i) => {
+    const actor = cols.find((c) => c.id === lead.attendantId) ?? { id: lead.attendantId, nome: lead.attendantName, role: "ATENDENTE" };
+    push(
+      "lead_created",
+      actor,
+      lead.clientName,
+      `Captou o lead "${lead.clientName}" (origem: ${lead.origin || "—"}).`,
+      lead.createdAt || new Date(Date.now() - 1000 * 60 * 60 * (i + 2)).toISOString(),
+    );
+    if (lead.status && lead.status !== "Novo") {
+      push(
+        "lead_status_changed",
+        actor,
+        lead.clientName,
+        `Alterou o status do lead "${lead.clientName}" para "${lead.status}".`,
+        lead.updatedAt || new Date(Date.now() - 1000 * 60 * 30 * (i + 1)).toISOString(),
+      );
+    }
+  });
+
+  // Ações administrativas
+  if (gg) {
+    push("login", gg, gg.nome, "Acessou o sistema.", new Date(Date.now() - 1000 * 60 * 90).toISOString());
+  }
+  cols.filter((c) => c.role === "ATENDENTE").slice(0, 4).forEach((c, i) => {
+    push(
+      "collaborator_created",
+      admin,
+      c.nome,
+      `Cadastrou o colaborador "${c.nome}" como ${ROLE_LABEL[c.role] ?? c.role}.`,
+      new Date(Date.now() - 1000 * 60 * 60 * 24 * (i + 1)).toISOString(),
+    );
+    push(
+      "permission_changed",
+      admin,
+      c.nome,
+      `Atualizou as permissões de acesso de "${c.nome}".`,
+      new Date(Date.now() - 1000 * 60 * 60 * 12 * (i + 1)).toISOString(),
+    );
+  });
+  const someManager = cols.find((c) => c.role === "GERENTE");
+  if (someManager) {
+    push("role_changed", admin, someManager.nome, `Promoveu "${someManager.nome}" para ${ROLE_LABEL.GERENTE}.`, new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString());
+  }
+
+  // Mais recentes primeiro
+  logs.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return logs;
+}
+
+function getAuditLogs(): AuditLogEntry[] {
+  try {
+    const raw = localStorage.getItem(LS_AUDIT_KEY);
+    if (raw) return JSON.parse(raw) as AuditLogEntry[];
+  } catch {
+    // fall through to seed
+  }
+  const seeded = seedAuditLogs();
+  localStorage.setItem(LS_AUDIT_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
+/** Registra uma nova ação no log de auditoria (mais recente no topo). */
+function appendAuditLog(
+  actor: { id: string; nome: string; role: string } | null,
+  action: AuditLogEntry["action"],
+  target: string,
+  description: string,
+): void {
+  const logs: AuditLogEntry[] = getAuditLogs();
+  logs.unshift({
+    id:        `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    action,
+    actorId:   actor?.id ?? "system",
+    actorName: actor?.nome ?? "Sistema",
+    actorRole: actor ? (ROLE_LABEL[actor.role] ?? actor.role) : "Sistema",
+    target,
+    description,
+    createdAt: new Date().toISOString(),
+  });
+  localStorage.setItem(LS_AUDIT_KEY, JSON.stringify(logs));
+}
+
+export async function listAuditLogs(token: string): Promise<{ logs: AuditLogEntry[] }> {
+  await delay(120);
+  const requester = resolveToken(token);
+  if (!requester) throw new Error("Token inválido.");
+  if (requester.role !== "ADMIN") throw new Error("Acesso restrito ao Administrador.");
+  return { logs: getAuditLogs() };
 }
 
 // ── Collaborators store ───────────────────────────────────────────────────────
@@ -419,6 +588,9 @@ export async function createCollaborator(
   },
 ): Promise<{ collaborator: Collaborator }> {
   await delay();
+  const actor = resolveToken(_token);
+  if (!actor) throw new Error("Token inválido.");
+  if (actor.role !== "ADMIN") throw new Error("Apenas o Administrador pode cadastrar colaboradores.");
   const cols  = getMockCollaborators();
   const team  = TEAM_DEFS.find((t) => t.id === input.teamId);
   const collaborator: Collaborator = {
@@ -437,7 +609,43 @@ export async function createCollaborator(
   saveMockCollaborators(cols);
   // Save credentials so this user can log in
   saveDynamicUser({ ...collaborator, senha: input.senha });
+  appendAuditLog(
+    { id: actor.id, nome: actor.nome, role: actor.role },
+    "collaborator_created",
+    collaborator.nome,
+    `Cadastrou o colaborador "${collaborator.nome}" como ${ROLE_LABEL[collaborator.role] ?? collaborator.role}.`,
+  );
   return { collaborator };
+}
+
+export async function deleteCollaborator(
+  token: string,
+  id: string,
+): Promise<{ success: boolean }> {
+  await delay();
+  const actor = resolveToken(token);
+  if (!actor) throw new Error("Token inválido.");
+
+  const cols   = getMockCollaborators();
+  const target = cols.find((c) => c.id === id);
+  if (!target) throw new Error("Colaborador não encontrado.");
+
+  if (!canDeleteCollaborator({ role: actor.role, id: actor.id, teamId: actor.teamId }, target)) {
+    throw new Error("Você não tem permissão para excluir este colaborador.");
+  }
+
+  saveMockCollaborators(cols.filter((c) => c.id !== id));
+  // Remove credenciais associadas
+  const remaining = getDynamicUsers().filter((u) => u.id !== id);
+  localStorage.setItem(LS_PASSWORDS_KEY, JSON.stringify(remaining));
+
+  appendAuditLog(
+    { id: actor.id, nome: actor.nome, role: actor.role },
+    "collaborator_deleted",
+    target.nome,
+    `Excluiu o colaborador "${target.nome}" (${ROLE_LABEL[target.role] ?? target.role}).`,
+  );
+  return { success: true };
 }
 
 export async function updateCollaborator(
@@ -450,13 +658,27 @@ export async function updateCollaborator(
   const idx  = cols.findIndex((c) => c.id === id);
   if (idx === -1) throw new Error("Colaborador não encontrado.");
 
+  const previous = cols[idx];
   const patch = { ...input } as Partial<Collaborator>;
   if (input.teamId !== undefined) {
     patch.teamName = TEAM_DEFS.find((t) => t.id === input.teamId)?.name ?? null;
   }
 
-  const collaborator = { ...cols[idx], ...patch } as Collaborator;
+  const collaborator = { ...previous, ...patch } as Collaborator;
   cols[idx] = collaborator;
   saveMockCollaborators(cols);
+
+  // Registrar alterações relevantes no log de auditoria
+  const resolved = resolveToken(_token);
+  const actor = resolved && { id: resolved.id, nome: resolved.nome, role: resolved.role };
+  if (input.role !== undefined && input.role !== previous.role) {
+    appendAuditLog(actor, "role_changed", collaborator.nome,
+      `Alterou o cargo de "${collaborator.nome}" para ${ROLE_LABEL[collaborator.role] ?? collaborator.role}.`);
+  }
+  if (input.permissoes !== undefined &&
+      JSON.stringify(input.permissoes) !== JSON.stringify(previous.permissoes)) {
+    appendAuditLog(actor, "permission_changed", collaborator.nome,
+      `Atualizou as permissões de acesso de "${collaborator.nome}".`);
+  }
   return { collaborator };
 }

@@ -8,8 +8,10 @@ export type { ApiLead, AssignableUser };
 export function useLeads({ paused = false }: { paused?: boolean } = {}) {
   const { token } = useAuth();
   const [leads, setLeads] = useState<ApiLead[]>([]);
+  const [archivedLeads, setArchivedLeads] = useState<ApiLead[]>([]);
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingArchived, setLoadingArchived] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchLeads = useCallback(async () => {
@@ -83,5 +85,50 @@ export function useLeads({ paused = false }: { paused?: boolean } = {}) {
     [token],
   );
 
-  return { leads, assignableUsers, loading, error, moveLead, delegateLead, addLead, updateLead, refresh: fetchLeads };
+  const archiveLeads = useCallback(async (): Promise<string> => {
+    if (!token) return "Sessão expirada.";
+    const { message } = await api.archiveLeads(token);
+    await fetchLeads();
+    return message;
+  }, [token, fetchLeads]);
+
+  const fetchArchived = useCallback(async (): Promise<void> => {
+    if (!token) return;
+    setLoadingArchived(true);
+    try {
+      const data = await api.listArchivedLeads(token);
+      setArchivedLeads(data.leads);
+    } catch {
+      setArchivedLeads([]);
+    } finally {
+      setLoadingArchived(false);
+    }
+  }, [token]);
+
+  const unarchiveLead = useCallback(
+    async (leadId: string): Promise<void> => {
+      if (!token) return;
+      await api.unarchiveLead(token, leadId);
+      setArchivedLeads((prev) => prev.filter((l) => l.id !== leadId));
+      await fetchLeads();
+    },
+    [token, fetchLeads],
+  );
+
+  return {
+    leads,
+    archivedLeads,
+    assignableUsers,
+    loading,
+    loadingArchived,
+    error,
+    moveLead,
+    delegateLead,
+    addLead,
+    updateLead,
+    archiveLeads,
+    fetchArchived,
+    unarchiveLead,
+    refresh: fetchLeads,
+  };
 }

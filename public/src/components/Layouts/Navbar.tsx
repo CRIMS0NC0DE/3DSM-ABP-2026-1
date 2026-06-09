@@ -32,7 +32,7 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
         </li>
         {user?.role === "ADMIN" && (
           <li>
-            <Link to="/audit-logs" className="transition hover:text-cyan-300">
+            <Link to="/logs" className="transition hover:text-cyan-300">
               Logs
             </Link>
           </li>

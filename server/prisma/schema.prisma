@@ -64,6 +64,16 @@ model User {
 
 // ============ Business Models ============
 
+// Funil de vendas: padroniza os estagios do lead e evita erros de digitacao (Sprint 2).
+enum LeadStatus {
+  novo
+  em_atendimento
+  agendado
+  em_negociacao
+  convertido
+  perdido
+}
+
 model Lead {
   id              String       @id @default(cuid())
   attendantId     String
@@ -74,37 +84,40 @@ model Lead {
   clientCpf       String?
   origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
   importance      String       // frio, morno, quente
-  status          String       // novo, em_atendimento, convertido, perdido
+  status          LeadStatus   @default(novo)
+  archive         Boolean      @default(false) // leads finalizados/perdidos arquivados saem do funil ativo
   storeId         String?
-  
+
   subject            String?
   firstInteractionAt DateTime?
   externalId         String? @unique
 
-  
+
   negotiation     Negotiation?
-  
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@map("leads")
+  @@index([archive])
 }
 
 model Negotiation {
   id              String   @id @default(cuid())
+
   leadId          String   @unique
   lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   userId          String?
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  stage           String   // prospecção, qualificação, proposta, fechamento, perdido
-  status          String   // aberta, encerrada
+
+  stage           String   // estagio atual da negociacao
+  status          String   // status atual da negociacao
   importance      String   // frio, morno, quente
-  reason          String?
   notes           String?
-  
-  statusHistory   NegotiationHistory[]
-  
+
+  history         NegotiationHistory[]
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

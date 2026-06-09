@@ -80,4 +80,22 @@ export class LeadController {
     const users = await this.leadService.listAssignable(actor);
     response.status(200).json({ users });
   };
+
+  archive = async (_request: Request, response: Response): Promise<void> => {
+    const result = await this.leadService.arquivarLeadsFinalizados();
+    response.status(200).json({ message: `${result.count} leads foram movidos para o arquivo.` });
+  };
+
+  listArchived = async (request: Request, response: Response): Promise<void> => {
+    const actor = request.authUser!;
+    const leads = await this.leadService.listArchived(actor);
+    response.status(200).json({ leads });
+  };
+
+  unarchive = async (request: Request, response: Response): Promise<void> => {
+    const actor = request.authUser!;
+    const leadId = String(request.params.id ?? "");
+    const lead = await this.leadService.unarchiveLead(actor, leadId);
+    response.status(200).json({ lead });
+  };
 }

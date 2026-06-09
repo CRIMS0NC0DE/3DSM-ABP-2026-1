@@ -99,6 +99,31 @@ export class CollaboratorService {
     return this.toResponse(updated);
   }
 
+  async delete(id: string): Promise<CollaboratorResponse> {
+    const current = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        role: true,
+        _count: { select: { leads: true } },
+      },
+    });
+
+    if (!current) throw new AppError("Colaborador nao encontrado.", 404);
+
+    // Lead.attendant tem onDelete: Cascade — excluir um colaborador com leads
+    // atribuidos apagaria esses leads. Bloqueamos e pedimos reatribuicao antes.
+    if (current._count.leads > 0) {
+      throw new AppError(
+        "Nao e possivel excluir: o colaborador ainda possui leads atribuidos. Reatribua os leads antes de excluir.",
+        409,
+      );
+    }
+
+    const deletedCollaborator = this.toResponse(current);
+    await prisma.user.delete({ where: { id } });
+    return deletedCollaborator;
+  }
+
   private toResponse(collaborator: PrismaCollaborator): CollaboratorResponse {
     return {
       id: collaborator.id,

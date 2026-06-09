@@ -1,23 +1,13 @@
 import { z } from "zod";
 
 import type { Lead, LeadStatus } from "../domain/entities/Lead";
+import type { UserRole } from "../domain/entities/User";
 import type { LeadRepository } from "../domain/repositories/LeadRepository";
 import type { UserRepository } from "../domain/repositories/UserRepository";
 import { AppError } from "../errors/AppError";
 import type { AuthenticatedUser } from "./AuthService";
 
-const statusAliases: Record<string, LeadStatus> = {
-  novo: "novo",
-  "nao atendido": "novo",
-  "em atendimento": "em_atendimento",
-  agendado: "agendado",
-  "em negociacao": "em_negociacao",
-  vendido: "convertido",
-  convertido: "convertido",
-  perdido: "perdido",
-};
-
-const statusValues = [
+const LEAD_STATUSES = [
   "novo",
   "em_atendimento",
   "agendado",
@@ -26,59 +16,41 @@ const statusValues = [
   "perdido",
 ] as const;
 
-function normalizeText(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ");
-}
-
-function normalizeStatus(input: unknown): LeadStatus | undefined {
-  if (typeof input !== "string") return undefined;
-  const key = normalizeText(input);
-  return statusAliases[key];
-}
-
-const statusSchema = z.preprocess(
-  (value) => normalizeStatus(value),
-  z.enum(statusValues),
-);
+const IMPORTANCES = ["frio", "morno", "quente"] as const;
 
 const createLeadSchema = z.object({
-  clientName: z.string().min(1, "Informe o nome do cliente."),
-  clientPhone: z.string().optional().nullable(),
-  clientEmail: z.string().email().optional().nullable(),
-  subject: z.string().optional().nullable(),
+  clientName: z.string().min(3, "Informe o nome do cliente."),
+  clientPhone: z.string().nullable().optional(),
+  clientEmail: z.string().email("Informe um e-mail valido.").nullable().optional(),
+  subject: z.string().nullable().optional(),
   origin: z.string().min(1, "Informe a origem do lead."),
-  importance: z.enum(["frio", "morno", "quente"]).default("morno"),
-  status: statusSchema.optional(),
-});
-
-const updateStatusSchema = z.object({
-  status: statusSchema,
-});
-
-const assignSchema = z.object({
-  attendantId: z.string().min(1, "Informe o responsável."),
+  importance: z.enum(IMPORTANCES).default("frio"),
+  status: z.enum(LEAD_STATUSES).default("novo"),
+  attendantId: z.string().optional(),
 });
 
 const updateLeadSchema = z.object({
-  clientName:  z.string().min(1).optional(),
-  clientPhone: z.string().optional().nullable(),
-  clientEmail: z.string().email().optional().nullable(),
-  subject:     z.string().optional().nullable(),
-  origin:      z.string().optional(),
-  importance:  z.enum(["frio", "morno", "quente"]).optional(),
-  status:      statusSchema.optional(),
+  clientName: z.string().min(3, "Informe o nome do cliente.").optional(),
+  clientPhone: z.string().nullable().optional(),
+  clientEmail: z.string().email("Informe um e-mail valido.").nullable().optional(),
+  subject: z.string().nullable().optional(),
+  origin: z.string().min(1).optional(),
+  importance: z.enum(IMPORTANCES).optional(),
+  status: z.enum(LEAD_STATUSES).optional(),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum(LEAD_STATUSES),
+});
+
+const assignSchema = z.object({
+  attendantId: z.string().min(1, "Informe o atendente responsavel."),
 });
 
 export interface AssignableUser {
   id: string;
-  nome: string;
-  role: string;
+  name: string;
+  role: UserRole;
 }
 
 export class LeadService {
@@ -87,133 +59,96 @@ export class LeadService {
     private readonly userRepository: UserRepository,
   ) {}
 
+  // Funil ativo, escopado pelo perfil do ator. Leads arquivados ja sao filtrados no repositorio.
   async listLeads(actor: AuthenticatedUser): Promise<Lead[]> {
-    if (actor.role === "ADMIN" || actor.role === "GERENTE_GERAL") {
-      return this.leadRepository.findAll();
+    switch (actor.role) {
+      case "ADMIN":
+      case "GERENTE_GERAL":
+        return this.leadRepository.findAll();
+      case "GERENTE":
+        return actor.teamId
+          ? this.leadRepository.findByTeam(actor.teamId)
+          : this.leadRepository.findByAttendant(actor.id);
+      default:
+        return this.leadRepository.findByAttendant(actor.id);
     }
-
-    if (actor.role === "GERENTE") {
-      if (!actor.teamId) return [];
-      return this.leadRepository.findByTeam(actor.teamId);
-    }
-
-    // ATENDENTE: apenas os próprios leads
-    return this.leadRepository.findByAttendant(actor.id);
   }
 
   async createLead(actor: AuthenticatedUser, input: unknown): Promise<Lead> {
-    if (actor.role === "GERENTE_GERAL") {
-      throw new AppError("Gerente Geral não pode criar leads diretamente.", 403);
-    }
-
     const parsed = createLeadSchema.parse(input);
+    const attendantId = parsed.attendantId ?? actor.id;
+
+    await this.ensureAttendantExists(attendantId);
+
     return this.leadRepository.create({
-      clientName:  parsed.clientName,
+      clientName: parsed.clientName,
       clientPhone: parsed.clientPhone ?? null,
       clientEmail: parsed.clientEmail ?? null,
-      subject:     parsed.subject ?? null,
-      origin:      parsed.origin,
-      importance:  parsed.importance,
-      status:      parsed.status ?? "novo",
-      attendantId: actor.id,
+      subject: parsed.subject ?? null,
+      origin: parsed.origin,
+      importance: parsed.importance,
+      status: parsed.status,
+      attendantId,
     });
   }
 
-  async updateLead(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
-    const lead = await this.getLeadOrFail(leadId);
-    await this.ensureCanActOnLead(actor, lead);
+  async updateLead(_actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
     const parsed = updateLeadSchema.parse(input);
+    await this.ensureLeadExists(leadId);
     return this.leadRepository.update(leadId, parsed);
   }
 
-  async updateStatus(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
-    const lead = await this.getLeadOrFail(leadId);
-    await this.ensureCanActOnLead(actor, lead);
-
+  async updateStatus(_actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
     const { status } = updateStatusSchema.parse(input);
-    return this.leadRepository.updateStatus(leadId, status);
+    await this.ensureLeadExists(leadId);
+    return this.leadRepository.updateStatus(leadId, status as LeadStatus);
   }
 
-  async assignLead(actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
-    if (actor.role === "ATENDENTE") {
-      throw new AppError("Vendedor não pode delegar leads.", 403);
-    }
-
-    const lead = await this.getLeadOrFail(leadId);
-    await this.ensureCanActOnLead(actor, lead);
+  async assignLead(_actor: AuthenticatedUser, leadId: string, input: unknown): Promise<Lead> {
     const { attendantId } = assignSchema.parse(input);
-    const target = await this.userRepository.findById(attendantId);
-
-    if (!target) {
-      throw new AppError("Usuário de destino não encontrado.", 404);
-    }
-
-    if (actor.role === "GERENTE_GERAL") {
-      const allowedRoles = ["GERENTE", "GERENTE_GERAL", "ATENDENTE"];
-      if (!allowedRoles.includes(target.role)) {
-        throw new AppError("Gerente Geral só pode delegar para Gerentes ou Atendentes.", 403);
-      }
-    }
-
-    if (actor.role === "GERENTE") {
-      if (!actor.teamId) {
-        throw new AppError("Gerente sem equipe associada.", 403);
-      }
-
-      if (target.role !== "ATENDENTE" || target.teamId !== actor.teamId) {
-        throw new AppError("Gerente só pode atribuir a atendentes do seu time.", 403);
-      }
-    }
-
+    await this.ensureLeadExists(leadId);
+    await this.ensureAttendantExists(attendantId);
     return this.leadRepository.assign(leadId, attendantId);
   }
 
-  async listAssignable(actor: AuthenticatedUser): Promise<AssignableUser[]> {
-    if (actor.role === "ATENDENTE") return [];
-
-    const allUsers = await this.userRepository.findAll();
-
-    if (actor.role === "GERENTE_GERAL") {
-      return allUsers
-        .filter((u) => ["GERENTE", "GERENTE_GERAL", "ATENDENTE"].includes(u.role) && u.id !== actor.id)
-        .map((u) => ({ id: u.id, nome: u.name, role: u.role }));
-    }
-
-    if (actor.role === "GERENTE") {
-      return allUsers
-        .filter((u) => u.role === "ATENDENTE" && u.teamId === actor.teamId)
-        .map((u) => ({ id: u.id, nome: u.name, role: u.role }));
-    }
-
-    // ADMIN
-    return allUsers
-      .filter((u) => u.id !== actor.id)
-      .map((u) => ({ id: u.id, nome: u.name, role: u.role }));
+  async listAssignable(_actor: AuthenticatedUser): Promise<AssignableUser[]> {
+    const users = await this.userRepository.findAll();
+    return users.map((user) => ({ id: user.id, name: user.name, role: user.role }));
   }
 
-  private async getLeadOrFail(leadId: string): Promise<Lead> {
+  // Move leads finalizados (convertido) ou perdidos para o arquivo, limpando o funil ativo.
+  async arquivarLeadsFinalizados(): Promise<{ count: number }> {
+    return this.leadRepository.archiveFinalized();
+  }
+
+  // Historico de leads arquivados, escopado pelo perfil do ator (mesma regra do funil ativo).
+  async listArchived(actor: AuthenticatedUser): Promise<Lead[]> {
+    switch (actor.role) {
+      case "ADMIN":
+      case "GERENTE_GERAL":
+        return this.leadRepository.findArchived();
+      case "GERENTE":
+        return actor.teamId
+          ? this.leadRepository.findArchived({ teamId: actor.teamId })
+          : this.leadRepository.findArchived({ attendantId: actor.id });
+      default:
+        return this.leadRepository.findArchived({ attendantId: actor.id });
+    }
+  }
+
+  // Devolve um lead arquivado ao funil ativo.
+  async unarchiveLead(_actor: AuthenticatedUser, leadId: string): Promise<Lead> {
+    await this.ensureLeadExists(leadId);
+    return this.leadRepository.unarchive(leadId);
+  }
+
+  private async ensureLeadExists(leadId: string): Promise<void> {
     const lead = await this.leadRepository.findById(leadId);
-    if (!lead) throw new AppError("Lead não encontrado.", 404);
-    return lead;
+    if (!lead) throw new AppError("Lead nao encontrado.", 404);
   }
 
-  private async ensureCanActOnLead(actor: AuthenticatedUser, lead: Lead): Promise<void> {
-    if (actor.role === "ADMIN" || actor.role === "GERENTE_GERAL") return;
-
-    if (actor.role === "GERENTE") {
-      if (!actor.teamId) {
-        throw new AppError("Gerente sem equipe associada.", 403);
-      }
-
-      const leadOwner = await this.userRepository.findById(lead.attendantId);
-      if (!leadOwner || leadOwner.teamId !== actor.teamId) {
-        throw new AppError("Você não tem permissão para mover este lead.", 403);
-      }
-      return;
-    }
-
-    if (lead.attendantId !== actor.id) {
-      throw new AppError("Você não tem permissão para mover este lead.", 403);
-    }
+  private async ensureAttendantExists(attendantId: string): Promise<void> {
+    const attendant = await this.userRepository.findById(attendantId);
+    if (!attendant) throw new AppError("Atendente responsavel nao encontrado.", 404);
   }
 }

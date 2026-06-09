@@ -21,9 +21,13 @@ function toDomain(lead: any): Lead {
   };
 }
 
+// Funil ativo: listagens sempre ignoram leads arquivados (Sprint 2).
+const activeFilter = { archive: false } as const;
+
 export class PrismaLeadRepository implements LeadRepository {
   async findAll(): Promise<Lead[]> {
     const leads = await prisma.lead.findMany({
+      where: activeFilter,
       include,
       orderBy: { createdAt: "desc" },
     });
@@ -32,7 +36,7 @@ export class PrismaLeadRepository implements LeadRepository {
 
   async findByAttendant(attendantId: string): Promise<Lead[]> {
     const leads = await prisma.lead.findMany({
-      where: { attendantId },
+      where: { ...activeFilter, attendantId },
       include,
       orderBy: { createdAt: "desc" },
     });
@@ -41,7 +45,7 @@ export class PrismaLeadRepository implements LeadRepository {
 
   async findByTeam(teamId: string): Promise<Lead[]> {
     const leads = await prisma.lead.findMany({
-      where: { attendant: { teamId } },
+      where: { ...activeFilter, attendant: { teamId } },
       include,
       orderBy: { createdAt: "desc" },
     });
@@ -87,7 +91,7 @@ export class PrismaLeadRepository implements LeadRepository {
     return toDomain(lead);
   }
 
-  async updateStatus(id: string, status: string): Promise<Lead> {
+  async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
     const lead = await prisma.lead.update({
       where: { id },
       data: { status },
@@ -100,6 +104,38 @@ export class PrismaLeadRepository implements LeadRepository {
     const lead = await prisma.lead.update({
       where: { id },
       data: { attendantId },
+      include,
+    });
+    return toDomain(lead);
+  }
+
+  async archiveFinalized(): Promise<{ count: number }> {
+    return prisma.lead.updateMany({
+      where: {
+        archive: false,
+        status: { in: ["convertido", "perdido"] },
+      },
+      data: { archive: true },
+    });
+  }
+
+  async findArchived(scope?: { attendantId?: string; teamId?: string }): Promise<Lead[]> {
+    const leads = await prisma.lead.findMany({
+      where: {
+        archive: true,
+        ...(scope?.attendantId && { attendantId: scope.attendantId }),
+        ...(scope?.teamId && { attendant: { teamId: scope.teamId } }),
+      },
+      include,
+      orderBy: { updatedAt: "desc" },
+    });
+    return leads.map(toDomain);
+  }
+
+  async unarchive(id: string): Promise<Lead> {
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: { archive: false },
       include,
     });
     return toDomain(lead);
