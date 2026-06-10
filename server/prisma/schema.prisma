@@ -92,8 +92,12 @@ model Lead {
   firstInteractionAt DateTime?
   externalId         String? @unique
 
+  estimatedValue     Decimal?     @db.Decimal(12, 2)
+  potentialRevenue   Decimal?     @db.Decimal(12, 2)
+  winProbability     Int?
 
   negotiation     Negotiation?
+  financeEntries  FinanceEntry[] @relation("LeadFinance")
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -172,6 +176,12 @@ enum FinanceEntryType {
   expense
 }
 
+enum FinanceEntryStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 model Document {
   id               String             @id @default(cuid())
   companyId        String
@@ -184,11 +194,19 @@ model Document {
   contentType      String?
   sizeBytes        Int?
   sector           String?
+  category         String?
   tagsJson         Json?
   isOnboarding     Boolean            @default(false)
   visibility       DocumentVisibility @default(private)
+  
+  ownerId          String?
+
+  deletedAt        DateTime?
+  
   createdAtUtc     DateTime           @default(now())
   updatedAtUtc     DateTime           @updatedAt
+  createdBy        String?
+  updatedBy        String?
 
   @@map("documents")
   @@index([companyId])
@@ -197,20 +215,32 @@ model Document {
 }
 
 model FinanceEntry {
-  id                 String           @id @default(cuid())
+  id                 String             @id @default(cuid())
   companyId          String
-  occurredAtUtc      DateTime
   type               FinanceEntryType
+  status             FinanceEntryStatus @default(PENDING)
   category           String
-  amount             Decimal          @db.Decimal(12, 2)
-  currency           String           @default("BRL")
+  amount             Decimal            @db.Decimal(12, 2)
+  currency           String             @default("BRL")
   notes              String?
   attachmentFileName String?
-  createdAtUtc       DateTime         @default(now())
-  updatedAtUtc       DateTime         @updatedAt
+  costCenter         String?
+  
+  dueDate            DateTime
+  paidDate           DateTime?
+  occurredAtUtc      DateTime           @default(now())
+
+  leadId             String?
+  lead               Lead?              @relation("LeadFinance", fields: [leadId], references: [id], onDelete: SetNull)
+
+  createdAtUtc       DateTime           @default(now())
+  updatedAtUtc       DateTime           @updatedAt
+  createdBy          String?
+  updatedBy          String?
 
   @@map("finance_entries")
   @@index([companyId])
-  @@index([companyId, occurredAtUtc])
   @@index([companyId, type])
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
 }
