@@ -1,0 +1,87 @@
+# 🔄 Sprint Retrospective — Sprint 2
+
+> Projeto: **1000 Valle Multimarcas** > Sprint: **Sprint 2** > Período: [Inserir as Datas da sua Sprint 2, ex: 15/04 a 06/05]  
+> Foco da Sprint: **Gestão Operacional de Leads e Controle de Negociações**
+
+---
+
+# 📌 Objetivo da Sprint
+
+Centralizar e controlar o funil de vendas (Kanban), implementar a evolução e transição de estágios das propostas comerciais de forma segura utilizando Padrões de Projeto (Design Patterns), aplicar regras de isolamento de dados por perfil (RBAC) e refinar os componentes visuais com base nos feedbacks da Sprint Review anterior.
+
+---
+
+# ✅ O que foi concluído
+
+## Domínio e Regras de Negócio — Backend (RP04 / CRC0-51)
+- [x] Criação das rotas e controladores para o CRUD de Leads (`POST`, `GET`, `PUT`, `DELETE`).
+- [x] Modelagem do relacionamento entre as tabelas `leads`, `users` (proprietários) e clientes vinculados.
+- [x] Implementação da lógica de pontuação, relevância ou nível de importância da negociação.
+
+## Padrões de Projeto & Máquina de Estados (CRC0-61 / CRC0-66)
+- [x] Aplicação do padrão de projeto **State** (ou estratégia de transição equivalente) para gerenciar de forma limpa as mudanças de status do lead (ex: *Prospecção* -> *Contato Inicial* -> *Proposta Enviada* -> *Ganho/Perdido*).
+- [x] Implementação de validações na API para impedir saltos ou retrocessos de estados inválidos no funil.
+
+## Segurança e Isolamento de Dados (CRC0-56)
+- [x] Implementação de middlewares de autorização baseados no perfil do usuário conectado (RBAC).
+- [x] Garantia de isolamento de dados na camada de banco de dados:
+  - Usuários com perfil `VENDEDOR` só visualizam e alteram os próprios leads.
+  - Usuários com perfil `GERENTE` possuem visibilidade total e controle da equipe.
+
+## Frontend — Painel Operacional e Kanban (CRC0-104 / CRC0-105)
+- [x] Desenvolvimento da interface visual de gerenciamento de leads (Visão de Lista e Painel Kanban).
+- [x] Integração das transições de estados no frontend (ex: arrastar e soltar ou formulário de atualização de status) consumindo os endpoints da API.
+- [x] Ajustes e refatoração de componentes da interface conforme os alinhamentos e especificações da Sprint Review 1.
+
+---
+
+# 🟢 O que funcionou bem
+
+- O uso de Padrões de Projeto facilitou a manutenção da lógica de estados do lead, evitando códigos cheios de estruturas condicionais (`if/else`) confusas.
+- A arquitetura em camadas criada na Sprint 1 provou sua eficiência, tornando o desenvolvimento dos novos serviços e repositórios muito mais rápido.
+- O isolamento de dados por perfil no backend funcionou de forma robusta e segura.
+- A comunicação e o alinhamento da equipe para ajustar os componentes visuais do frontend baseados no feedback anterior foram eficientes.
+
+---
+
+# 🔴 Problemas encontrados
+
+- Sincronização e atualização instantânea do estado do Kanban no frontend ao arrastar ou atualizar um lead (erros de renderização em tempo real).
+- Complexidade acima do esperado na implementação das queries SQL/NoSQL com filtros dinâmicos para isolar os leads por proprietário (`owner_id`).
+- Dificuldade em lidar com dados incompletos ou formatos de data inconsistentes vindo de testes manuais no frontend.
+
+---
+
+# 💡 Melhorias para a próxima Sprint (Sprint 3)
+
+- **Auditoria Transparente:** Focar no sistema de logs para garantir que cada alteração de status/valor feita nesta Sprint seja gravada de forma imutável.
+- **Performance e Filtros:** Criar e otimizar os filtros de período customizado nos dashboards analíticos.
+- **Padronização de Respostas:** Centralizar as mensagens de erro e exceções da API para o frontend tratar de forma mais amigável.
+- **Métricas:** Iniciar a criação dos indicadores visuais (gráficos) de conversão de leads ganhos/perdidos.
+
+---
+
+# 📊 Metas de Entrega (DoD)
+
+| Meta | Status |
+|---|---|
+| CRUD de leads operando no banco de dados | ✅ |
+| Isolamento de dados por perfil (`Vendedor` vs `Gerente`) validado | ✅ |
+| Painel Kanban funcional e responsivo | ✅ |
+| Lógica de evolução de estágios desacoplada via Padrões de Projeto | ✅ |
+| Ajustes da Sprint Review 1 homologados na interface | ✅ |
+| Integração API ↔ Frontend das ações de manipulação de leads concluída | ✅ |
+
+---
+
+# 🧠 Lições Aprendidas
+
+- Escrever regras de negócio complexas (como transição de status de vendas) direto nos controladores gera dívida técnica rápida; isolar essa lógica melhora a qualidade do código.
+- Filtros de segurança e privacidade de dados devem ser pensados e testados antes de construir as telas do frontend.
+- O refinamento contínuo baseado nas reviews ajuda a evitar que a equipe desenvolva telas desalinhadas com o objetivo final da plataforma.
+
+---
+
+# 📝 Observações Finais
+
+A Sprint 2 entregou o verdadeiro "coração" do sistema da **1000 Valle Multimarcas**. Com o funil operacionalizado, a segurança por perfil estruturada e o banco respondendo corretamente às regras comerciais, a equipe concluiu a parte operacional mais complexa, restando agora a entrega de inteligência de dados, relatórios e a auditoria de segurança (Sprint 3).
