@@ -22,6 +22,9 @@ import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
 import RelatoryPage from "./pages/RelatoryPage";
 import LogsPage from "./pages/LogsPage";
+import FinancialPage from "./pages/FinancialPage";
+import DocumentsPage from "./pages/DocumentsPage";
+import AgendaPage from "./pages/AgendaPage";
 
 export default function App() {
   return (
@@ -69,6 +72,9 @@ export default function App() {
               <Route element={<PermissionRoute permission="detalhes_pagamento" />}>
                 <Route path="/detalhes-pagamento" element={<PaymentDetailsPage />} />
               </Route>
+              <Route path="/agenda" element={<AgendaPage />} />
+              <Route path="/documentos" element={<DocumentsPage />} />
+              <Route path="/financeiro" element={<FinancialPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

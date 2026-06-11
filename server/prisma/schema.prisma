@@ -1,5 +1,6 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -10,7 +11,7 @@ generator client {
 
 model Role {
   id          String       @id @default(cuid())
-  name        String       @unique // ATENDENTE, GERENTE, GERENTE_GERAL, ADMIN
+  name        String       @unique
   description String?
   users       User[]
   permissions Permission[]
@@ -19,52 +20,49 @@ model Role {
 }
 
 model Permission {
-  id    String   @id @default(cuid())
-  name  String   @unique // criar_lead, editar_lead, ver_dashboard, etc
+  id    String @id @default(cuid())
+  name  String @unique
   roles Role[]
 
   @@map("permissions")
 }
 
 model Team {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  managerId   String?
-  manager     User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
-  members     User[]   @relation("TeamMembers")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  managerId String?
+  manager   User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members   User[]   @relation("TeamMembers")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("teams")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id])
-  teamId    String?
-  team      Team?    @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
-  
-  // Relacionamento com liderança de time
+  id       String  @id @default(cuid())
+  name     String
+  email    String  @unique
+  password String
+  roleId   String
+  role     Role    @relation(fields: [roleId], references: [id])
+  teamId   String?
+  team     Team?   @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
+
   managedTeams Team[] @relation("TeamManager")
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relacionamentos com negócio
-  leads              Lead[]        @relation("AttendantLeads")
-  negotiations       Negotiation[]
-  auditLogs          AuditLog[]
+  leads        Lead[]        @relation("AttendantLeads")
+  negotiations Negotiation[]
+  auditLogs    AuditLog[]
 
   @@map("users")
 }
 
 // ============ Business Models ============
 
-// Funil de vendas: padroniza os estagios do lead e evita erros de digitacao (Sprint 2).
 enum LeadStatus {
   novo
   em_atendimento
@@ -75,91 +73,92 @@ enum LeadStatus {
 }
 
 model Lead {
-  id              String       @id @default(cuid())
-  attendantId     String
-  attendant       User         @relation("AttendantLeads", fields: [attendantId], references: [id], onDelete: Cascade)
-  clientName      String
-  clientEmail     String?
-  clientPhone     String?
-  clientCpf       String?
-  origin          String       // visita_loja, telefone, whatsapp, instagram, formulario, outro
-  importance      String       // frio, morno, quente
-  status          LeadStatus   @default(novo)
-  archive         Boolean      @default(false) // leads finalizados/perdidos arquivados saem do funil ativo
-  storeId         String?
+  id          String     @id @default(cuid())
+  attendantId String
+  attendant   User       @relation("AttendantLeads", fields: [attendantId], references: [id], onDelete: Cascade)
+  clientName  String
+  clientEmail String?
+  clientPhone String?
+  clientCpf   String?
+  origin      String
+  importance  String
+  status      LeadStatus @default(novo)
+  archive     Boolean    @default(false)
+  storeId     String?
 
   subject            String?
   firstInteractionAt DateTime?
-  externalId         String? @unique
+  externalId         String?   @unique
 
-  estimatedValue     Decimal?     @db.Decimal(12, 2)
-  potentialRevenue   Decimal?     @db.Decimal(12, 2)
-  winProbability     Int?
+  estimatedValue   Decimal? @db.Decimal(12, 2)
+  potentialRevenue Decimal? @db.Decimal(12, 2)
+  winProbability   Int?
 
-  negotiation     Negotiation?
-  financeEntries  FinanceEntry[] @relation("LeadFinance")
+  negotiation    Negotiation?
+  financeEntries FinanceEntry[] @relation("LeadFinance")
+  agendaEvents   AgendaEvent[]  @relation("LeadAgenda")
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("leads")
   @@index([archive])
 }
 
 model Negotiation {
-  id              String   @id @default(cuid())
+  id     String  @id @default(cuid())
+  leadId String  @unique
+  lead   Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  leadId          String   @unique
-  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  stage     String
+  status    String
+  importance String
+  notes     String?
 
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  history NegotiationHistory[]
 
-  stage           String   // estagio atual da negociacao
-  status          String   // status atual da negociacao
-  importance      String   // frio, morno, quente
-  notes           String?
-
-  history         NegotiationHistory[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("negotiations")
 }
 
 model NegotiationHistory {
-  id              String   @id @default(cuid())
-  negotiationId   String
-  negotiation     Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
-  
-  previousStage   String?
-  newStage        String?
-  previousStatus  String?
-  newStatus       String?
-  reason          String?
-  
-  createdAt       DateTime @default(now())
+  id            String      @id @default(cuid())
+  negotiationId String
+  negotiation   Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+
+  previousStage  String?
+  newStage       String?
+  previousStatus String?
+  newStatus      String?
+  reason         String?
+
+  createdAt DateTime @default(now())
 
   @@map("negotiation_history")
 }
 
 model AuditLog {
-  id              String   @id @default(cuid())
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  entityType      String   // user, lead, team, negotiation
-  entityId        String
-  action          String   // create, update, delete, login
-  changes         Json?
-  
-  createdAt       DateTime @default(now())
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  entityType String
+  entityId   String
+  action     String
+  changes    Json?
+
+  createdAt DateTime @default(now())
 
   @@map("audit_logs")
   @@index([userId])
   @@index([entityType, entityId])
 }
+
+// ============ Document Module ============
 
 enum DocumentType {
   File
@@ -169,17 +168,6 @@ enum DocumentType {
 enum DocumentVisibility {
   private
   public
-}
-
-enum FinanceEntryType {
-  income
-  expense
-}
-
-enum FinanceEntryStatus {
-  PENDING
-  PAID
-  CANCELLED
 }
 
 model Document {
@@ -198,11 +186,8 @@ model Document {
   tagsJson         Json?
   isOnboarding     Boolean            @default(false)
   visibility       DocumentVisibility @default(private)
-  
   ownerId          String?
-
   deletedAt        DateTime?
-  
   createdAtUtc     DateTime           @default(now())
   updatedAtUtc     DateTime           @updatedAt
   createdBy        String?
@@ -212,6 +197,20 @@ model Document {
   @@index([companyId])
   @@index([companyId, visibility])
   @@index([companyId, sector])
+}
+
+// ============ Finance Module ============
+
+enum FinanceEntryType {
+  income
+  expense
+}
+
+enum FinanceEntryStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
 }
 
 model FinanceEntry {
@@ -225,14 +224,11 @@ model FinanceEntry {
   notes              String?
   attachmentFileName String?
   costCenter         String?
-  
   dueDate            DateTime
   paidDate           DateTime?
   occurredAtUtc      DateTime           @default(now())
-
   leadId             String?
   lead               Lead?              @relation("LeadFinance", fields: [leadId], references: [id], onDelete: SetNull)
-
   createdAtUtc       DateTime           @default(now())
   updatedAtUtc       DateTime           @updatedAt
   createdBy          String?
@@ -243,4 +239,46 @@ model FinanceEntry {
   @@index([companyId, type])
   @@index([companyId, status])
   @@index([companyId, dueDate])
+}
+
+// ============ Agenda Module ============
+
+enum AgendaEventType {
+  test_drive
+  visit
+  meeting
+  call
+  follow_up
+  delivery
+}
+
+enum AgendaEventStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+model AgendaEvent {
+  id          String            @id @default(cuid())
+  companyId   String
+  title       String
+  type        AgendaEventType
+  status      AgendaEventStatus @default(pending)
+  scheduledAt DateTime
+  clientName  String
+  vehicleName String?
+  assignedTo  String?
+  notes       String?
+  leadId      String?
+  lead        Lead?             @relation("LeadAgenda", fields: [leadId], references: [id], onDelete: SetNull)
+  createdAtUtc DateTime @default(now())
+  updatedAtUtc DateTime @updatedAt
+  createdBy    String?
+  updatedBy    String?
+
+  @@map("agenda_events")
+  @@index([companyId])
+  @@index([companyId, scheduledAt])
+  @@index([companyId, status])
 }

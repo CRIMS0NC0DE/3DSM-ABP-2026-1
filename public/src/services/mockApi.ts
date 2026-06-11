@@ -3,7 +3,18 @@
  * All function signatures match api.ts exactly so callers need no changes.
  */
 import type { LoginResponse, AuthUser } from "../types/auth";
-import type { ApiLead, AssignableUser, AuditLogEntry } from "./api";
+import type {
+  ApiLead,
+  AssignableUser,
+  AuditLogEntry,
+  ApiDocument,
+  ApiFinanceEntry,
+  ApiAgendaEvent,
+  ApiPagination,
+  CreateDocumentLinkInput,
+  CreateFinanceEntryInput,
+  CreateAgendaEventInput,
+} from "./api";
 import type { Collaborator } from "../components/Collaborators/types";
 import { buildDefaultPermissoes, canDeleteCollaborator, TEAMS as TEAM_DEFS } from "../components/Collaborators/types";
 import csvRaw from "../data/leads.csv?raw";
@@ -681,4 +692,263 @@ export async function updateCollaborator(
       `Atualizou as permissões de acesso de "${collaborator.nome}".`);
   }
   return { collaborator };
+}
+
+// ── Documentos ────────────────────────────────────────────────────────────────
+
+const LS_DOCUMENTS_KEY = "mock_documents_v1";
+
+function getDocuments(): ApiDocument[] {
+  try {
+    const raw = localStorage.getItem(LS_DOCUMENTS_KEY);
+    if (raw) return JSON.parse(raw) as ApiDocument[];
+  } catch { /* fall through */ }
+  const seed: ApiDocument[] = [
+    { id: "doc-1", companyId: "default-company", title: "Manual do Honda Civic 2023", description: "Manual completo do proprietário", type: "File", url: null, storedFileName: "manual_civic_2023.pdf", originalFileName: "manual_civic_2023.pdf", contentType: "application/pdf", sizeBytes: 4096000, sector: "Vendas", tags: ["manual", "honda"], isOnboarding: false, visibility: "private", createdAtUtc: "2026-05-10T10:00:00Z", updatedAtUtc: "2026-05-10T10:00:00Z" },
+    { id: "doc-2", companyId: "default-company", title: "Tabela FIPE - Junho 2026", description: "Tabela de preços veículos usados", type: "Link", url: "https://www.fipe.org.br", storedFileName: null, originalFileName: null, contentType: null, sizeBytes: null, sector: "Precificação", tags: ["fipe", "preço"], isOnboarding: false, visibility: "public", createdAtUtc: "2026-06-01T08:00:00Z", updatedAtUtc: "2026-06-01T08:00:00Z" },
+    { id: "doc-3", companyId: "default-company", title: "Contrato Padrão de Compra e Venda", description: "Modelo de contrato para clientes", type: "File", url: null, storedFileName: "contrato_padrao.docx", originalFileName: "contrato_padrao.docx", contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", sizeBytes: 102400, sector: "Jurídico", tags: ["contrato", "venda"], isOnboarding: true, visibility: "private", createdAtUtc: "2026-04-15T14:00:00Z", updatedAtUtc: "2026-04-20T09:00:00Z" },
+    { id: "doc-4", companyId: "default-company", title: "Política de Financiamento BV", description: "Condições e taxas de financiamento", type: "File", url: null, storedFileName: "politica_bv.pdf", originalFileName: "politica_bv.pdf", contentType: "application/pdf", sizeBytes: 2048000, sector: "Financeiro", tags: ["financiamento", "bv"], isOnboarding: true, visibility: "private", createdAtUtc: "2026-03-20T11:30:00Z", updatedAtUtc: "2026-03-20T11:30:00Z" },
+    { id: "doc-5", companyId: "default-company", title: "Guia de Onboarding - Vendedores", description: "Processo de integração para novos vendedores", type: "File", url: null, storedFileName: "onboarding_vendedores.pdf", originalFileName: "onboarding_vendedores.pdf", contentType: "application/pdf", sizeBytes: 1536000, sector: "RH", tags: ["onboarding", "rh"], isOnboarding: true, visibility: "private", createdAtUtc: "2026-02-01T09:00:00Z", updatedAtUtc: "2026-02-01T09:00:00Z" },
+  ];
+  localStorage.setItem(LS_DOCUMENTS_KEY, JSON.stringify(seed));
+  return seed;
+}
+
+function saveDocuments(docs: ApiDocument[]): void {
+  localStorage.setItem(LS_DOCUMENTS_KEY, JSON.stringify(docs));
+}
+
+export async function listDocuments(
+  _token: string,
+  params?: { search?: string; sector?: string; page?: number; pageSize?: number },
+): Promise<{ documents: ApiDocument[]; pagination: ApiPagination }> {
+  await delay();
+  let docs = getDocuments();
+  if (params?.search) {
+    const q = params.search.toLowerCase();
+    docs = docs.filter((d) => d.title.toLowerCase().includes(q) || (d.description ?? "").toLowerCase().includes(q));
+  }
+  if (params?.sector) {
+    docs = docs.filter((d) => d.sector === params.sector);
+  }
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 20;
+  const total = docs.length;
+  const paginated = docs.slice((page - 1) * pageSize, page * pageSize);
+  return {
+    documents: paginated,
+    pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  };
+}
+
+export async function createDocumentLink(
+  _token: string,
+  input: CreateDocumentLinkInput,
+): Promise<{ document: ApiDocument }> {
+  await delay();
+  const doc: ApiDocument = {
+    id: `doc-${Date.now()}`,
+    companyId: "default-company",
+    title: input.title,
+    description: input.description ?? null,
+    type: "Link",
+    url: input.url,
+    storedFileName: null,
+    originalFileName: null,
+    contentType: null,
+    sizeBytes: null,
+    sector: input.sector ?? null,
+    tags: input.tags ?? [],
+    isOnboarding: false,
+    visibility: input.visibility ?? "private",
+    createdAtUtc: new Date().toISOString(),
+    updatedAtUtc: new Date().toISOString(),
+  };
+  const docs = getDocuments();
+  docs.unshift(doc);
+  saveDocuments(docs);
+  return { document: doc };
+}
+
+export async function deleteDocument(_token: string, id: string): Promise<void> {
+  await delay();
+  const docs = getDocuments().filter((d) => d.id !== id);
+  saveDocuments(docs);
+}
+
+// ── Financeiro ────────────────────────────────────────────────────────────────
+
+const LS_FINANCE_KEY = "mock_finance_v1";
+
+function getFinanceEntries(): ApiFinanceEntry[] {
+  try {
+    const raw = localStorage.getItem(LS_FINANCE_KEY);
+    if (raw) return JSON.parse(raw) as ApiFinanceEntry[];
+  } catch { /* fall through */ }
+  const seed: ApiFinanceEntry[] = [
+    { id: "fin-1", companyId: "default-company", type: "income", status: "paid", category: "Venda", amount: "52990.00", currency: "BRL", dueDate: "2026-05-11T00:00:00Z", occurredAtUtc: "2026-05-11T14:35:00Z", paidDate: "2026-05-11T14:35:00Z", costCenter: null, notes: "Venda Honda Civic 2023 - Marcio Silva", leadId: null, createdAtUtc: "2026-05-11T14:35:00Z", updatedAtUtc: "2026-05-11T14:35:00Z" },
+    { id: "fin-2", companyId: "default-company", type: "income", status: "paid", category: "Venda", amount: "39990.00", currency: "BRL", dueDate: "2026-05-10T00:00:00Z", occurredAtUtc: "2026-05-10T10:15:00Z", paidDate: "2026-05-10T10:15:00Z", costCenter: null, notes: "Venda Toyota Corolla 2024 - Vanessa Souza", leadId: null, createdAtUtc: "2026-05-10T10:15:00Z", updatedAtUtc: "2026-05-10T10:15:00Z" },
+    { id: "fin-3", companyId: "default-company", type: "income", status: "pending", category: "Entrada", amount: "23990.00", currency: "BRL", dueDate: "2026-06-15T00:00:00Z", occurredAtUtc: "2026-05-09T18:45:00Z", paidDate: null, costCenter: null, notes: "Entrada Jeep Renegade - Carlos Pereira", leadId: null, createdAtUtc: "2026-05-09T18:45:00Z", updatedAtUtc: "2026-05-09T18:45:00Z" },
+    { id: "fin-4", companyId: "default-company", type: "income", status: "paid", category: "Venda", amount: "84990.00", currency: "BRL", dueDate: "2026-05-07T00:00:00Z", occurredAtUtc: "2026-05-07T12:05:00Z", paidDate: "2026-05-07T12:05:00Z", costCenter: null, notes: "Venda Hyundai HB20 2024 - Letícia Andrade", leadId: null, createdAtUtc: "2026-05-07T12:05:00Z", updatedAtUtc: "2026-05-07T12:05:00Z" },
+    { id: "fin-5", companyId: "default-company", type: "expense", status: "paid", category: "Manutenção", amount: "3500.00", currency: "BRL", dueDate: "2026-05-05T00:00:00Z", occurredAtUtc: "2026-05-05T09:00:00Z", paidDate: "2026-05-05T09:00:00Z", costCenter: "Operações", notes: "Manutenção pátio e limpeza veículos", leadId: null, createdAtUtc: "2026-05-05T09:00:00Z", updatedAtUtc: "2026-05-05T09:00:00Z" },
+    { id: "fin-6", companyId: "default-company", type: "income", status: "paid", category: "Venda", amount: "67290.00", currency: "BRL", dueDate: "2026-05-04T00:00:00Z", occurredAtUtc: "2026-05-04T09:50:00Z", paidDate: "2026-05-04T09:50:00Z", costCenter: null, notes: "Venda Ford Ranger 2023 - Ana Carolina", leadId: null, createdAtUtc: "2026-05-04T09:50:00Z", updatedAtUtc: "2026-05-04T09:50:00Z" },
+    { id: "fin-7", companyId: "default-company", type: "expense", status: "pending", category: "Marketing", amount: "8000.00", currency: "BRL", dueDate: "2026-06-20T00:00:00Z", occurredAtUtc: "2026-06-01T00:00:00Z", paidDate: null, costCenter: "Marketing", notes: "Campanha digital junho 2026", leadId: null, createdAtUtc: "2026-06-01T00:00:00Z", updatedAtUtc: "2026-06-01T00:00:00Z" },
+    { id: "fin-8", companyId: "default-company", type: "income", status: "overdue", category: "Comissão", amount: "5299.00", currency: "BRL", dueDate: "2026-05-31T00:00:00Z", occurredAtUtc: "2026-05-31T00:00:00Z", paidDate: null, costCenter: null, notes: "Comissão pendente - vendedor João", leadId: null, createdAtUtc: "2026-05-31T00:00:00Z", updatedAtUtc: "2026-05-31T00:00:00Z" },
+  ];
+  localStorage.setItem(LS_FINANCE_KEY, JSON.stringify(seed));
+  return seed;
+}
+
+function saveFinanceEntries(entries: ApiFinanceEntry[]): void {
+  localStorage.setItem(LS_FINANCE_KEY, JSON.stringify(entries));
+}
+
+export async function listFinanceEntries(
+  _token: string,
+  params?: { page?: number; pageSize?: number; type?: "income" | "expense"; status?: string },
+): Promise<{ entries: ApiFinanceEntry[]; pagination: ApiPagination }> {
+  await delay();
+  let entries = getFinanceEntries();
+  if (params?.type)   entries = entries.filter((e) => e.type === params.type);
+  if (params?.status) entries = entries.filter((e) => e.status === params.status);
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 20;
+  const total = entries.length;
+  const paginated = entries.slice((page - 1) * pageSize, page * pageSize);
+  return {
+    entries: paginated,
+    pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  };
+}
+
+export async function createFinanceEntry(
+  _token: string,
+  input: CreateFinanceEntryInput,
+): Promise<{ entry: ApiFinanceEntry }> {
+  await delay();
+  const now = new Date().toISOString();
+  const entry: ApiFinanceEntry = {
+    id: `fin-${Date.now()}`,
+    companyId: "default-company",
+    type: input.type,
+    status: input.status ?? "pending",
+    category: input.category,
+    amount: Number(input.amount).toFixed(2),
+    currency: input.currency ?? "BRL",
+    dueDate: input.dueDate,
+    occurredAtUtc: now,
+    paidDate: null,
+    costCenter: null,
+    notes: input.notes ?? null,
+    leadId: null,
+    createdAtUtc: now,
+    updatedAtUtc: now,
+  };
+  const entries = getFinanceEntries();
+  entries.unshift(entry);
+  saveFinanceEntries(entries);
+  return { entry };
+}
+
+export async function deleteFinanceEntry(_token: string, id: string): Promise<void> {
+  await delay();
+  saveFinanceEntries(getFinanceEntries().filter((e) => e.id !== id));
+}
+
+// ── Agenda ────────────────────────────────────────────────────────────────────
+
+const LS_AGENDA_KEY = "mock_agenda_v1";
+
+function getAgendaEvents(): ApiAgendaEvent[] {
+  try {
+    const raw = localStorage.getItem(LS_AGENDA_KEY);
+    if (raw) return JSON.parse(raw) as ApiAgendaEvent[];
+  } catch { /* fall through */ }
+  const seed: ApiAgendaEvent[] = [
+    { id: "evt-1",  companyId: "default-company", title: "Test drive — Honda Civic",         type: "test_drive", status: "confirmed",  scheduledAt: "2026-06-10T09:00:00Z", clientName: "Marcio Silva",     vehicleName: "Honda Civic 2023",     assignedTo: "João Vendedor",   notes: null,                               leadId: null, createdAtUtc: "2026-06-05T10:00:00Z", updatedAtUtc: "2026-06-05T10:00:00Z" },
+    { id: "evt-2",  companyId: "default-company", title: "Visita agendada — Letícia",        type: "visit",      status: "confirmed",  scheduledAt: "2026-06-10T14:30:00Z", clientName: "Letícia Andrade",  vehicleName: "Hyundai HB20 2024",    assignedTo: "Maria Atendente", notes: null,                               leadId: null, createdAtUtc: "2026-06-05T11:00:00Z", updatedAtUtc: "2026-06-05T11:00:00Z" },
+    { id: "evt-3",  companyId: "default-company", title: "Ligação de retorno — Carlos",      type: "call",       status: "pending",    scheduledAt: "2026-06-10T11:00:00Z", clientName: "Carlos Pereira",   vehicleName: null,                   assignedTo: "João Vendedor",   notes: null,                               leadId: null, createdAtUtc: "2026-06-06T08:00:00Z", updatedAtUtc: "2026-06-06T08:00:00Z" },
+    { id: "evt-4",  companyId: "default-company", title: "Reunião de equipe",                type: "meeting",    status: "confirmed",  scheduledAt: "2026-06-11T08:30:00Z", clientName: "Equipe",           vehicleName: null,                   assignedTo: "Gerente Geral",   notes: "Reunião semanal de alinhamento",   leadId: null, createdAtUtc: "2026-06-06T09:00:00Z", updatedAtUtc: "2026-06-06T09:00:00Z" },
+    { id: "evt-5",  companyId: "default-company", title: "Follow-up — Vanessa",              type: "follow_up",  status: "pending",    scheduledAt: "2026-06-11T15:00:00Z", clientName: "Vanessa Souza",    vehicleName: "Toyota Corolla 2024",  assignedTo: "Maria Atendente", notes: null,                               leadId: null, createdAtUtc: "2026-06-07T08:00:00Z", updatedAtUtc: "2026-06-07T08:00:00Z" },
+    { id: "evt-6",  companyId: "default-company", title: "Entrega do veículo — André",       type: "delivery",   status: "confirmed",  scheduledAt: "2026-06-12T10:00:00Z", clientName: "André Lima",       vehicleName: "VW Gol 2021",          assignedTo: "João Vendedor",   notes: "Documentação já assinada",         leadId: null, createdAtUtc: "2026-06-07T09:00:00Z", updatedAtUtc: "2026-06-07T09:00:00Z" },
+    { id: "evt-7",  companyId: "default-company", title: "Test drive — BMW 320i",            type: "test_drive", status: "confirmed",  scheduledAt: "2026-06-13T09:30:00Z", clientName: "Eduardo Alves",    vehicleName: "BMW 320i 2022",        assignedTo: "Maria Atendente", notes: null,                               leadId: null, createdAtUtc: "2026-06-07T10:00:00Z", updatedAtUtc: "2026-06-07T10:00:00Z" },
+    { id: "evt-8",  companyId: "default-company", title: "Visita — Camila Rocha",            type: "visit",      status: "pending",    scheduledAt: "2026-06-14T16:00:00Z", clientName: "Camila Rocha",     vehicleName: null,                   assignedTo: "João Vendedor",   notes: null,                               leadId: null, createdAtUtc: "2026-06-08T08:00:00Z", updatedAtUtc: "2026-06-08T08:00:00Z" },
+    { id: "evt-9",  companyId: "default-company", title: "Reunião — Financiamento BV",       type: "meeting",    status: "confirmed",  scheduledAt: "2026-06-16T14:00:00Z", clientName: "Roberto Santos",   vehicleName: "Fiat Pulse 2024",      assignedTo: "Gerente Geral",   notes: null,                               leadId: null, createdAtUtc: "2026-06-08T09:00:00Z", updatedAtUtc: "2026-06-08T09:00:00Z" },
+    { id: "evt-10", companyId: "default-company", title: "Follow-up — Patricia",             type: "follow_up",  status: "cancelled",  scheduledAt: "2026-06-05T11:30:00Z", clientName: "Patricia Ferreira", vehicleName: null,                  assignedTo: "Maria Atendente", notes: null,                               leadId: null, createdAtUtc: "2026-06-01T08:00:00Z", updatedAtUtc: "2026-06-05T12:00:00Z" },
+    { id: "evt-11", companyId: "default-company", title: "Entrega — Ana Carolina",           type: "delivery",   status: "completed",  scheduledAt: "2026-06-04T09:00:00Z", clientName: "Ana Carolina",     vehicleName: "Ford Ranger 2023",     assignedTo: "João Vendedor",   notes: null,                               leadId: null, createdAtUtc: "2026-06-01T10:00:00Z", updatedAtUtc: "2026-06-04T10:00:00Z" },
+    { id: "evt-12", companyId: "default-company", title: "Test drive — Kicks",               type: "test_drive", status: "pending",    scheduledAt: "2026-06-18T13:00:00Z", clientName: "Patricia Ferreira", vehicleName: "Nissan Kicks 2023",   assignedTo: "João Vendedor",   notes: null,                               leadId: null, createdAtUtc: "2026-06-08T11:00:00Z", updatedAtUtc: "2026-06-08T11:00:00Z" },
+  ];
+  localStorage.setItem(LS_AGENDA_KEY, JSON.stringify(seed));
+  return seed;
+}
+
+function saveAgendaEvents(events: ApiAgendaEvent[]): void {
+  localStorage.setItem(LS_AGENDA_KEY, JSON.stringify(events));
+}
+
+export async function listAgendaEvents(
+  _token: string,
+  params?: { page?: number; pageSize?: number; dateFrom?: string; dateTo?: string; status?: string; type?: string },
+): Promise<{ events: ApiAgendaEvent[]; pagination: ApiPagination }> {
+  await delay();
+  let events = getAgendaEvents();
+  if (params?.status)   events = events.filter((e) => e.status === params.status);
+  if (params?.type)     events = events.filter((e) => e.type === params.type);
+  if (params?.dateFrom) events = events.filter((e) => e.scheduledAt >= params.dateFrom!);
+  if (params?.dateTo)   events = events.filter((e) => e.scheduledAt <= params.dateTo!);
+  events.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 100;
+  const total = events.length;
+  const paginated = events.slice((page - 1) * pageSize, page * pageSize);
+  return {
+    events: paginated,
+    pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  };
+}
+
+export async function createAgendaEvent(
+  _token: string,
+  input: CreateAgendaEventInput,
+): Promise<{ event: ApiAgendaEvent }> {
+  await delay();
+  const now = new Date().toISOString();
+  const event: ApiAgendaEvent = {
+    id: `evt-${Date.now()}`,
+    companyId: "default-company",
+    title: input.title,
+    type: input.type,
+    status: "pending",
+    scheduledAt: input.scheduledAt,
+    clientName: input.clientName,
+    vehicleName: input.vehicleName ?? null,
+    assignedTo: input.assignedTo ?? null,
+    notes: input.notes ?? null,
+    leadId: input.leadId ?? null,
+    createdAtUtc: now,
+    updatedAtUtc: now,
+  };
+  const events = getAgendaEvents();
+  events.push(event);
+  saveAgendaEvents(events);
+  return { event };
+}
+
+export async function updateAgendaEventStatus(
+  _token: string,
+  id: string,
+  status: ApiAgendaEvent["status"],
+): Promise<{ event: ApiAgendaEvent }> {
+  await delay();
+  const events = getAgendaEvents();
+  const idx = events.findIndex((e) => e.id === id);
+  if (idx === -1) throw new Error("Evento não encontrado.");
+  events[idx] = { ...events[idx], status, updatedAtUtc: new Date().toISOString() };
+  saveAgendaEvents(events);
+  return { event: events[idx] };
+}
+
+export async function deleteAgendaEvent(_token: string, id: string): Promise<void> {
+  await delay();
+  saveAgendaEvents(getAgendaEvents().filter((e) => e.id !== id));
 }

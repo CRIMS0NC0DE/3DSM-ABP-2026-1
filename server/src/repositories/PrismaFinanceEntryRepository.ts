@@ -1,18 +1,29 @@
 import prisma from "../config/db";
-import type { CreateFinanceEntryInput, FinanceEntry, FinanceListFilters } from "../domain/entities/FinanceEntry";
+import type {
+  CreateFinanceEntryInput,
+  FinanceEntry,
+  FinanceEntryStatus,
+  FinanceEntryType,
+  FinanceListFilters,
+} from "../domain/entities/FinanceEntry";
 import type { FinanceEntryRepository } from "../domain/repositories/FinanceEntryRepository";
 
 function toDomain(entry: any): FinanceEntry {
   return {
     id: entry.id,
     companyId: entry.companyId,
-    occurredAtUtc: entry.occurredAtUtc,
-    type: entry.type,
+    type: entry.type.toLowerCase() as FinanceEntryType,
+    status: entry.status.toLowerCase() as FinanceEntryStatus,
     category: entry.category,
     amount: entry.amount.toString(),
     currency: entry.currency,
     notes: entry.notes ?? null,
     attachmentFileName: entry.attachmentFileName ?? null,
+    costCenter: entry.costCenter ?? null,
+    dueDate: entry.dueDate,
+    paidDate: entry.paidDate ?? null,
+    occurredAtUtc: entry.occurredAtUtc,
+    leadId: entry.leadId ?? null,
     createdAtUtc: entry.createdAtUtc,
     updatedAtUtc: entry.updatedAtUtc,
   };
@@ -20,11 +31,19 @@ function toDomain(entry: any): FinanceEntry {
 
 export class PrismaFinanceEntryRepository implements FinanceEntryRepository {
   async findMany(filters: FinanceListFilters) {
-    const where = { companyId: filters.companyId };
+    const where: any = { companyId: filters.companyId };
+    if (filters.type) where.type = filters.type;
+    if (filters.status) where.status = filters.status.toUpperCase();
+    if (filters.dateFrom || filters.dateTo) {
+      where.dueDate = {};
+      if (filters.dateFrom) where.dueDate.gte = filters.dateFrom;
+      if (filters.dateTo) where.dueDate.lte = filters.dateTo;
+    }
+
     const [entries, total] = await Promise.all([
       prisma.financeEntry.findMany({
         where,
-        orderBy: { occurredAtUtc: "desc" },
+        orderBy: { dueDate: "desc" },
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
       }),
@@ -46,13 +65,18 @@ export class PrismaFinanceEntryRepository implements FinanceEntryRepository {
     const entry = await prisma.financeEntry.create({
       data: {
         companyId: input.companyId,
-        occurredAtUtc: input.occurredAtUtc,
-        type: input.type,
+        type: input.type as any,
+        status: (input.status ?? "pending").toUpperCase() as any,
         category: input.category,
         amount: input.amount,
         currency: input.currency,
+        dueDate: input.dueDate,
+        occurredAtUtc: input.occurredAtUtc ?? input.dueDate,
+        paidDate: input.paidDate ?? null,
+        costCenter: input.costCenter ?? null,
         notes: input.notes ?? null,
         attachmentFileName: input.attachmentFileName ?? null,
+        leadId: input.leadId ?? null,
       },
     });
     return toDomain(entry);
@@ -64,6 +88,6 @@ export class PrismaFinanceEntryRepository implements FinanceEntryRepository {
   }
 
   async delete(companyId: string, id: string): Promise<void> {
-    await prisma.financeEntry.delete({ where: { id, companyId } });
+    await prisma.financeEntry.deleteMany({ where: { id, companyId } });
   }
 }

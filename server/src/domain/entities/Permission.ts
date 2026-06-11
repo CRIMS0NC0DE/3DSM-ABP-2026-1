@@ -33,4 +33,7 @@ export class Permission {
   static DOCUMENTS_CREATE = "documents.create";
   static DOCUMENTS_DELETE = "documents.delete";
   static FINANCE_MANAGE = "finance.manage";
+  static AGENDA_VIEW = "agenda.view";
+  static AGENDA_CREATE = "agenda.create";
+  static AGENDA_DELETE = "agenda.delete";
 }

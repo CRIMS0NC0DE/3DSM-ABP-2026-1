@@ -427,3 +427,211 @@ export function listAuditLogs(token: string): Promise<{ logs: AuditLogEntry[] }>
     headers: { Authorization: `Bearer ${token}` },
   }).then(({ logs }) => ({ logs: logs.map(mapAuditFromApi) }));
 }
+
+// ── Documentos ────────────────────────────────────────────────────────────────
+
+export interface ApiDocument {
+  id: string;
+  companyId: string;
+  title: string;
+  description: string | null;
+  type: "File" | "Link";
+  url: string | null;
+  storedFileName: string | null;
+  originalFileName: string | null;
+  contentType: string | null;
+  sizeBytes: number | null;
+  sector: string | null;
+  tags: string[];
+  isOnboarding: boolean;
+  visibility: "private" | "public";
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface ApiPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface CreateDocumentLinkInput {
+  title: string;
+  description?: string;
+  url: string;
+  sector?: string;
+  tags?: string[];
+  visibility?: "private" | "public";
+}
+
+export function listDocuments(
+  token: string,
+  params?: { search?: string; sector?: string; page?: number; pageSize?: number },
+): Promise<{ documents: ApiDocument[]; pagination: ApiPagination }> {
+  if (USE_MOCK) return mockApi.listDocuments(token, params);
+  const qs = new URLSearchParams();
+  if (params?.search)   qs.set("search",   params.search);
+  if (params?.sector)   qs.set("sector",   params.sector);
+  if (params?.page)     qs.set("page",     String(params.page));
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+  return request<{ documents: ApiDocument[]; pagination: ApiPagination }>(
+    `/documentos?${qs}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export function createDocumentLink(token: string, input: CreateDocumentLinkInput): Promise<{ document: ApiDocument }> {
+  if (USE_MOCK) return mockApi.createDocumentLink(token, input);
+  return request<{ document: ApiDocument }>("/documentos/link", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteDocument(token: string, id: string): Promise<void> {
+  if (USE_MOCK) return mockApi.deleteDocument(token, id);
+  return request<void>(`/documentos/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Financeiro ────────────────────────────────────────────────────────────────
+
+export interface ApiFinanceEntry {
+  id: string;
+  companyId: string;
+  type: "income" | "expense";
+  status: "pending" | "paid" | "overdue" | "cancelled";
+  category: string;
+  amount: string;
+  currency: string;
+  dueDate: string;
+  occurredAtUtc: string;
+  paidDate: string | null;
+  costCenter: string | null;
+  notes: string | null;
+  leadId: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface CreateFinanceEntryInput {
+  type: "income" | "expense";
+  category: string;
+  amount: number;
+  dueDate: string;
+  currency?: string;
+  notes?: string;
+  status?: "pending" | "paid" | "overdue" | "cancelled";
+}
+
+export function listFinanceEntries(
+  token: string,
+  params?: { page?: number; pageSize?: number; type?: "income" | "expense"; status?: string },
+): Promise<{ entries: ApiFinanceEntry[]; pagination: ApiPagination }> {
+  if (USE_MOCK) return mockApi.listFinanceEntries(token, params);
+  const qs = new URLSearchParams();
+  if (params?.page)     qs.set("page",     String(params.page));
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params?.type)     qs.set("type",     params.type);
+  if (params?.status)   qs.set("status",   params.status);
+  return request<{ data: ApiFinanceEntry[]; pagination: ApiPagination }>(`/finance?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then(({ data, pagination }) => ({ entries: data, pagination }));
+}
+
+export function createFinanceEntry(token: string, input: CreateFinanceEntryInput): Promise<{ entry: ApiFinanceEntry }> {
+  if (USE_MOCK) return mockApi.createFinanceEntry(token, input);
+  return request<{ entry: ApiFinanceEntry }>("/finance", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteFinanceEntry(token: string, id: string): Promise<void> {
+  if (USE_MOCK) return mockApi.deleteFinanceEntry(token, id);
+  return request<void>(`/finance/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Agenda ────────────────────────────────────────────────────────────────────
+
+export interface ApiAgendaEvent {
+  id: string;
+  companyId: string;
+  title: string;
+  type: "test_drive" | "visit" | "meeting" | "call" | "follow_up" | "delivery";
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  scheduledAt: string;
+  clientName: string;
+  vehicleName: string | null;
+  assignedTo: string | null;
+  notes: string | null;
+  leadId: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface CreateAgendaEventInput {
+  title: string;
+  type: "test_drive" | "visit" | "meeting" | "call" | "follow_up" | "delivery";
+  scheduledAt: string;
+  clientName: string;
+  vehicleName?: string;
+  assignedTo?: string;
+  notes?: string;
+  leadId?: string;
+}
+
+export function listAgendaEvents(
+  token: string,
+  params?: { page?: number; pageSize?: number; dateFrom?: string; dateTo?: string; status?: string; type?: string },
+): Promise<{ events: ApiAgendaEvent[]; pagination: ApiPagination }> {
+  if (USE_MOCK) return mockApi.listAgendaEvents(token, params);
+  const qs = new URLSearchParams();
+  if (params?.page)     qs.set("page",     String(params.page));
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params?.dateFrom) qs.set("dateFrom", params.dateFrom);
+  if (params?.dateTo)   qs.set("dateTo",   params.dateTo);
+  if (params?.status)   qs.set("status",   params.status);
+  if (params?.type)     qs.set("type",     params.type);
+  return request<{ events: ApiAgendaEvent[]; pagination: ApiPagination }>(`/agenda?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function createAgendaEvent(token: string, input: CreateAgendaEventInput): Promise<{ event: ApiAgendaEvent }> {
+  if (USE_MOCK) return mockApi.createAgendaEvent(token, input);
+  return request<{ event: ApiAgendaEvent }>("/agenda", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAgendaEventStatus(
+  token: string,
+  id: string,
+  status: ApiAgendaEvent["status"],
+): Promise<{ event: ApiAgendaEvent }> {
+  if (USE_MOCK) return mockApi.updateAgendaEventStatus(token, id, status);
+  return request<{ event: ApiAgendaEvent }>(`/agenda/${id}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function deleteAgendaEvent(token: string, id: string): Promise<void> {
+  if (USE_MOCK) return mockApi.deleteAgendaEvent(token, id);
+  return request<void>(`/agenda/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

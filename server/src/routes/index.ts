@@ -14,6 +14,7 @@ import { createAuditRoutes } from "./auditRoutes";
 import { AuditLogService } from "../services/AuditLogService";
 import { createDocumentRoutes } from "./documentRoutes";
 import { createFinanceRoutes } from "./financeRoutes";
+import { createAgendaRoutes } from "./agendaRoutes";
 
 export function createRouter() {
   const router = Router();
@@ -34,6 +35,7 @@ export function createRouter() {
   router.use("/audit", createAuditRoutes(authService));
   router.use("/documentos", createDocumentRoutes(authService));
   router.use("/finance", createFinanceRoutes(authService));
+  router.use("/agenda", createAgendaRoutes(authService));
 
   return router;
 }

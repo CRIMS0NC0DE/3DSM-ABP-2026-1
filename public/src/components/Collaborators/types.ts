@@ -11,7 +11,10 @@ export type PermissionKey =
   | "relatorio"
   | "transacoes"
   | "pontos"
-  | "logs";
+  | "logs"
+  | "agenda"
+  | "documentos"
+  | "financeiro";
 
 export type Collaborator = {
   id: string;
@@ -106,6 +109,9 @@ export const MODULES: Array<{ key: PermissionKey; label: string }> = [
   { key: "pontos",             label: "Pontos" },
   { key: "logs",               label: "Logs de auditoria" },
   { key: "configuracoes",      label: "Configurações" },
+  { key: "agenda",             label: "Agenda" },
+  { key: "documentos",         label: "Documentos" },
+  { key: "financeiro",         label: "Financeiro" },
 ];
 
 export function buildDefaultPermissoes(role: UserRole): Record<PermissionKey, boolean> {

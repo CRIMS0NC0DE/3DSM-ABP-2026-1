@@ -10,16 +10,25 @@ import { resolveCompanyId } from "./tenant";
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  type: z.enum(["income", "expense"]).optional(),
+  status: z.enum(["pending", "paid", "overdue", "cancelled"]).optional(),
+  dateFrom: z.coerce.date().optional(),
+  dateTo: z.coerce.date().optional(),
 });
 
 const createFinanceSchema = z.object({
-  occurredAtUtc: z.coerce.date({ error: "Informe a data do lancamento." }),
   type: z.enum(["income", "expense"]),
+  status: z.enum(["pending", "paid", "overdue", "cancelled"]).default("pending"),
   category: z.string().trim().min(2, "Informe a categoria."),
   amount: z.coerce.number().positive("Informe um valor maior que zero."),
   currency: z.string().trim().length(3, "Informe uma moeda valida.").default("BRL"),
+  dueDate: z.coerce.date({ error: "Informe a data de vencimento." }),
+  occurredAtUtc: z.coerce.date().optional(),
+  paidDate: z.coerce.date().optional().nullable(),
+  costCenter: z.string().trim().optional().nullable(),
   notes: z.string().trim().optional().nullable(),
   attachmentFileName: z.string().trim().optional().nullable(),
+  leadId: z.string().trim().optional().nullable(),
 });
 
 export class FinanceService {
@@ -31,6 +40,10 @@ export class FinanceService {
       companyId: resolveCompanyId(actor),
       page: parsed.page,
       pageSize: parsed.pageSize,
+      type: parsed.type,
+      status: parsed.status,
+      dateFrom: parsed.dateFrom,
+      dateTo: parsed.dateTo,
     });
   }
 
@@ -38,13 +51,18 @@ export class FinanceService {
     const parsed = createFinanceSchema.parse(input);
     return this.financeRepository.create({
       companyId: resolveCompanyId(actor),
-      occurredAtUtc: parsed.occurredAtUtc,
       type: parsed.type,
+      status: parsed.status,
       category: parsed.category,
       amount: parsed.amount.toFixed(2),
       currency: parsed.currency.toUpperCase(),
+      dueDate: parsed.dueDate,
+      occurredAtUtc: parsed.occurredAtUtc,
+      paidDate: parsed.paidDate ?? null,
+      costCenter: parsed.costCenter ?? null,
       notes: parsed.notes ?? null,
       attachmentFileName: parsed.attachmentFileName ?? null,
+      leadId: parsed.leadId ?? null,
     });
   }
 

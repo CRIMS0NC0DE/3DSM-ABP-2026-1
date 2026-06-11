@@ -175,6 +175,34 @@ function LogsIcon() {
   );
 }
 
+function FinancialIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Z" stroke="currentColor" strokeWidth="1.75" />
+      <path d="M12 6v2m0 8v2M9 9.5C9 8.12 10.34 7 12 7s3 1.12 3 2.5c0 1.55-1.5 2.5-3 2.5s-3 .95-3 2.5C9 15.88 10.34 17 12 17s3-1.12 3-2.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DocumentsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AgendaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -230,6 +258,8 @@ export default function Sidebar() {
       { label: "Dashboard",   to: "/dashboard",    icon: <DashboardIcon />, permissionKey: "dashboard" },
       { label: "Garagem",     to: "/garagem",      icon: <CarIcon />,       permissionKey: "garagem" },
       { label: leadsLabel,    to: "/leads",        icon: <LeadsIcon />,     permissionKey: "leads" },
+      { label: "Agenda",      to: "/agenda",       icon: <AgendaIcon /> },
+      { label: "Documentos",  to: "/documentos",   icon: <DocumentsIcon /> },
       { label: "Chat",        to: "/chat",         icon: <ChatIcon /> },
       { label: "Notificações",to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
       { label: colabLabel,    to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
@@ -241,6 +271,7 @@ export default function Sidebar() {
 
   const allReportItems = useMemo<SidebarItem[]>(
     () => [
+      { label: "Financeiro",     to: "/financeiro",           icon: <FinancialIcon /> },
       { label: "Det. Pagamento", to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
       { label: reportLabel,      to: "/relatorio-transacoes", icon: <TransactionsIcon />,   permissionKey: "relatorio" },
     ],
