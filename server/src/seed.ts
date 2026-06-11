@@ -15,6 +15,7 @@ const rolePermissions: Record<string, string[]> = {
     Permission.EDITAR_NEGOCIACAO,
     Permission.VER_NEGOCIACAO,
     Permission.VER_DASHBOARD_OPERACIONAL,
+    Permission.DOCUMENTS_VIEW,
   ],
   [Role.GERENTE]: [
     Permission.CRIAR_LEAD,
@@ -24,6 +25,8 @@ const rolePermissions: Record<string, string[]> = {
     Permission.VER_NEGOCIACAO,
     Permission.VER_DASHBOARD_OPERACIONAL,
     Permission.VER_DASHBOARD_ANALITICO,
+    Permission.DOCUMENTS_VIEW,
+    Permission.DOCUMENTS_CREATE,
   ],
   [Role.GERENTE_GERAL]: [
     Permission.VER_LEAD,
@@ -31,6 +34,9 @@ const rolePermissions: Record<string, string[]> = {
     Permission.VER_NEGOCIACAO,
     Permission.VER_DASHBOARD_OPERACIONAL,
     Permission.VER_DASHBOARD_ANALITICO,
+    Permission.DOCUMENTS_VIEW,
+    Permission.DOCUMENTS_CREATE,
+    Permission.FINANCE_MANAGE,
   ],
   [Role.ADMIN]: [
     Permission.CRIAR_LEAD,
@@ -49,6 +55,10 @@ const rolePermissions: Record<string, string[]> = {
     Permission.GERENCIAR_USUARIOS,
     Permission.GERENCIAR_EQUIPES,
     Permission.GERENCIAR_TODOS_LEADS,
+    Permission.DOCUMENTS_VIEW,
+    Permission.DOCUMENTS_CREATE,
+    Permission.DOCUMENTS_DELETE,
+    Permission.FINANCE_MANAGE,
   ],
 };
 

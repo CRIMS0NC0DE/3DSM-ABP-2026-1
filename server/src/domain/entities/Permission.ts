@@ -28,4 +28,9 @@ export class Permission {
   static GERENCIAR_USUARIOS = "gerenciar_usuarios";
   static GERENCIAR_EQUIPES = "gerenciar_equipes";
   static GERENCIAR_TODOS_LEADS = "gerenciar_todos_leads";
+
+  static DOCUMENTS_VIEW = "documents.view";
+  static DOCUMENTS_CREATE = "documents.create";
+  static DOCUMENTS_DELETE = "documents.delete";
+  static FINANCE_MANAGE = "finance.manage";
 }
