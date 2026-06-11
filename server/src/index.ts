@@ -42,5 +42,5 @@ app.use(createRouter());
 app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(`Servidor rodando em http://localhost:${port}`);
+  console.log(`Servidor rodando em http://localhost:3002`);
 });

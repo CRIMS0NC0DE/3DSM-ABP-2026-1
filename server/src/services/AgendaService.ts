@@ -36,15 +36,17 @@ export class AgendaService {
 
   async list(actor: AuthenticatedUser, query: unknown): Promise<PaginatedResult<AgendaEvent>> {
     const parsed = paginationSchema.parse(query);
-    return this.repo.findMany({
+    const filters: any = {
       companyId: resolveCompanyId(actor),
       page: parsed.page,
       pageSize: parsed.pageSize,
-      dateFrom: parsed.dateFrom,
-      dateTo: parsed.dateTo,
-      status: parsed.status,
-      type: parsed.type,
-    });
+    };
+    if (parsed.dateFrom) filters.dateFrom = parsed.dateFrom;
+    if (parsed.dateTo) filters.dateTo = parsed.dateTo;
+    if (parsed.status) filters.status = parsed.status;
+    if (parsed.type) filters.type = parsed.type;
+
+    return this.repo.findMany(filters);
   }
 
   async create(actor: AuthenticatedUser, input: unknown): Promise<AgendaEvent> {

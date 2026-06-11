@@ -135,13 +135,12 @@ async function importData() {
       const negotiationCreatedAt = new Date(row.negotiation_created_at);
       const negotiationUpdatedAt = new Date(row.negotiation_updated_at);
       
-      await prisma.negotiation.upsert({
+      const negotiation = await prisma.negotiation.upsert({
         where: { leadId: lead.id },
         update: {
           stage: row.negotiation_stage,
           status: row.negotiation_status === "Finalizado com venda" || row.negotiation_status === "Finalizado sem venda" ? "encerrada" : "aberta",
           importance: row.negotiation_importance,
-          reason: row.finalization_reason || null,
           userId: userId,
           updatedAt: negotiationUpdatedAt,
         },
@@ -150,12 +149,23 @@ async function importData() {
           stage: row.negotiation_stage,
           status: row.negotiation_status === "Finalizado com venda" || row.negotiation_status === "Finalizado sem venda" ? "encerrada" : "aberta",
           importance: row.negotiation_importance,
-          reason: row.finalization_reason || null,
           userId: userId,
           createdAt: negotiationCreatedAt,
           updatedAt: negotiationUpdatedAt,
         },
       });
+
+      if (row.finalization_reason) {
+        await prisma.negotiationHistory.create({
+          data: {
+            negotiationId: negotiation.id,
+            newStage: row.negotiation_stage,
+            newStatus: row.negotiation_status === "Finalizado com venda" || row.negotiation_status === "Finalizado sem venda" ? "encerrada" : "aberta",
+            reason: row.finalization_reason,
+            createdAt: negotiationUpdatedAt,
+          }
+        });
+      }
 
       if ((i + 1) % 100 === 0) {
         console.log(`Progresso: ${i + 1}/${rows.length} leads processados...`);

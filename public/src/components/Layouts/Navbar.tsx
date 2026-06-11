@@ -25,11 +25,6 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
             Leads
           </Link>
         </li>
-        <li>
-          <Link to="/relatorio-transacoes" className="transition hover:text-cyan-300">
-            Relatorios
-          </Link>
-        </li>
         {user?.role === "ADMIN" && (
           <li>
             <Link to="/logs" className="transition hover:text-cyan-300">

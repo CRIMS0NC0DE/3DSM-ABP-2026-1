@@ -36,20 +36,22 @@ export class FinanceService {
 
   async list(actor: AuthenticatedUser, query: unknown): Promise<PaginatedResult<FinanceEntry>> {
     const parsed = paginationSchema.parse(query);
-    return this.financeRepository.findMany({
+    const filters: any = {
       companyId: resolveCompanyId(actor),
       page: parsed.page,
       pageSize: parsed.pageSize,
-      type: parsed.type,
-      status: parsed.status,
-      dateFrom: parsed.dateFrom,
-      dateTo: parsed.dateTo,
-    });
+    };
+    if (parsed.type) filters.type = parsed.type;
+    if (parsed.status) filters.status = parsed.status;
+    if (parsed.dateFrom) filters.dateFrom = parsed.dateFrom;
+    if (parsed.dateTo) filters.dateTo = parsed.dateTo;
+
+    return this.financeRepository.findMany(filters);
   }
 
   async create(actor: AuthenticatedUser, input: unknown): Promise<FinanceEntry> {
     const parsed = createFinanceSchema.parse(input);
-    return this.financeRepository.create({
+    const data: any = {
       companyId: resolveCompanyId(actor),
       type: parsed.type,
       status: parsed.status,
@@ -57,13 +59,15 @@ export class FinanceService {
       amount: parsed.amount.toFixed(2),
       currency: parsed.currency.toUpperCase(),
       dueDate: parsed.dueDate,
-      occurredAtUtc: parsed.occurredAtUtc,
       paidDate: parsed.paidDate ?? null,
       costCenter: parsed.costCenter ?? null,
       notes: parsed.notes ?? null,
       attachmentFileName: parsed.attachmentFileName ?? null,
       leadId: parsed.leadId ?? null,
-    });
+    };
+    if (parsed.occurredAtUtc) data.occurredAtUtc = parsed.occurredAtUtc;
+
+    return this.financeRepository.create(data);
   }
 
   async delete(actor: AuthenticatedUser, id: string): Promise<void> {

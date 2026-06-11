@@ -99,14 +99,6 @@ function LeadsIcon() {
   );
 }
 
-function ChatIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.3c.95 0 1.8.18 2.6.5l4.9-1.5-1.5 4.9Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -240,40 +232,39 @@ export default function Sidebar() {
 
   const leadsLabel = role === "ATENDENTE" ? "Meus Leads" : "Leads";
   const colabLabel =
-    role === "GERENTE"       ? "Minha Equipe"  :
-    role === "GERENTE_GERAL" ? "Gestão de Equipes" :
-    "Colaboradores";
+    role === "GERENTE" ? "Minha Equipe" :
+      role === "GERENTE_GERAL" ? "Gestão de Equipes" :
+        "Colaboradores";
   const configLabel =
-    role === "ATENDENTE"     ? "Meu Perfil"    :
-    role === "GERENTE"       ? "Config. Unidade" :
-    "Configurações";
+    role === "ATENDENTE" ? "Meu Perfil" :
+      role === "GERENTE" ? "Config. Unidade" :
+        "Configurações";
   const reportLabel =
-    role === "ATENDENTE"     ? "Meu Relatório" :
-    role === "GERENTE"       ? "Rel. Regional"  :
-    role === "GERENTE_GERAL" ? "Rel. Consolidado" :
-    "Rel. Transações";
+    role === "ATENDENTE" ? "Meu Relatório" :
+      role === "GERENTE" ? "Rel. Regional" :
+        role === "GERENTE_GERAL" ? "Rel. Consolidado" :
+          "Rel. Transações";
 
   const allItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Dashboard",   to: "/dashboard",    icon: <DashboardIcon />, permissionKey: "dashboard" },
-      { label: "Garagem",     to: "/garagem",      icon: <CarIcon />,       permissionKey: "garagem" },
-      { label: leadsLabel,    to: "/leads",        icon: <LeadsIcon />,     permissionKey: "leads" },
-      { label: "Agenda",      to: "/agenda",       icon: <AgendaIcon /> },
-      { label: "Documentos",  to: "/documentos",   icon: <DocumentsIcon /> },
-      { label: "Chat",        to: "/chat",         icon: <ChatIcon /> },
-      { label: "Notificações",to: "/notificacoes", icon: <BellIcon />,      permissionKey: "notificacoes" },
-      { label: colabLabel,    to: "/colaboradores",icon: <UsersIcon />,     permissionKey: "colaboradores" },
-      { label: "Logs",        to: "/logs",         icon: <LogsIcon />,      permissionKey: "logs" },
-      { label: configLabel,   to: "/configuracoes",icon: <SettingsIcon />,  permissionKey: "configuracoes" },
+      { label: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, permissionKey: "dashboard" },
+      { label: "Garagem", to: "/garagem", icon: <CarIcon />, permissionKey: "garagem" },
+      { label: leadsLabel, to: "/leads", icon: <LeadsIcon />, permissionKey: "leads" },
+      { label: "Agenda", to: "/agenda", icon: <AgendaIcon /> },
+      { label: "Documentos", to: "/documentos", icon: <DocumentsIcon /> },
+      { label: "Notificações", to: "/notificacoes", icon: <BellIcon />, permissionKey: "notificacoes" },
+      { label: colabLabel, to: "/colaboradores", icon: <UsersIcon />, permissionKey: "colaboradores" },
+      { label: "Logs", to: "/logs", icon: <LogsIcon />, permissionKey: "logs" },
+      { label: configLabel, to: "/configuracoes", icon: <SettingsIcon />, permissionKey: "configuracoes" },
     ],
     [leadsLabel, colabLabel, configLabel],
   );
 
   const allReportItems = useMemo<SidebarItem[]>(
     () => [
-      { label: "Financeiro",     to: "/financeiro",           icon: <FinancialIcon /> },
-      { label: "Det. Pagamento", to: "/detalhes-pagamento",   icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
-      { label: reportLabel,      to: "/relatorio-transacoes", icon: <TransactionsIcon />,   permissionKey: "relatorio" },
+      { label: "Financeiro", to: "/financeiro", icon: <FinancialIcon /> },
+      { label: "Det. Pagamento", to: "/detalhes-pagamento", icon: <PaymentDetailsIcon />, permissionKey: "detalhes_pagamento" },
+      { label: reportLabel, to: "/relatorio-transacoes", icon: <TransactionsIcon />, permissionKey: "relatorio" },
     ],
     [reportLabel],
   );
